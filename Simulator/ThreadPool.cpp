@@ -1,7 +1,7 @@
 #include "ThreadPool.hpp"
 #include <iostream>
 
-namespace UserCommon_315634022 {
+// namespace UserCommon_315634022 {
 
 ThreadPool::ThreadPool(size_t numThreads) {
     for (size_t i = 0; i < numThreads; ++i) {
@@ -50,4 +50,4 @@ void ThreadPool::shutdown() {
     }
 }
 
-} // namespace UserCommon_315634022
+// } // namespace UserCommon_315634022
