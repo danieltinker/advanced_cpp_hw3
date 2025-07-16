@@ -5,6 +5,6 @@
 #include "PlayerRegistration.h"  // the header that declares PlayerRegistration
 
 PlayerRegistration::PlayerRegistration(PlayerFactory factory) {
-    auto& regsitrar = AlgorithmRegistrar::getAlgorithmRegistrar();
+    auto& regsitrar = AlgorithmRegistrar::get();
     regsitrar.addPlayerFactoryToLastEntry(std::move(factory));
 }

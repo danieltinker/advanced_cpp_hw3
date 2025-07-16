@@ -41,7 +41,7 @@ class GameManagerRegistrar {
 
 public:
     /// Get the singleton registrar
-    static GameManagerRegistrar& getGameManagerRegistrar();
+    static GameManagerRegistrar& get();
 
     /// Push a new entry (before you dlopen)
     void createGameManagerEntry(const std::string& name) {

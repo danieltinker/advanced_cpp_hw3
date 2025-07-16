@@ -3,6 +3,6 @@
 
 GameManagerRegistrar GameManagerRegistrar::registrar;
 
-GameManagerRegistrar& GameManagerRegistrar::getGameManagerRegistrar() {
+GameManagerRegistrar& GameManagerRegistrar::get() {
     return registrar;
 }

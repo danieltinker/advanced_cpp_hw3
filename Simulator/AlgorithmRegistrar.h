@@ -41,7 +41,7 @@ class AlgorithmRegistrar {
     std::vector<AlgorithmAndPlayerFactories> algorithms;
     static AlgorithmRegistrar registrar;
 public:
-    static AlgorithmRegistrar& getAlgorithmRegistrar();
+    static AlgorithmRegistrar& get();
     void createAlgorithmFactoryEntry(const std::string& name) {
         algorithms.emplace_back(name);
     }

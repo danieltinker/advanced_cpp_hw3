@@ -2,6 +2,6 @@
 
 AlgorithmRegistrar AlgorithmRegistrar::registrar;
 
-AlgorithmRegistrar& AlgorithmRegistrar::getAlgorithmRegistrar() {
+AlgorithmRegistrar& AlgorithmRegistrar::get() {
     return registrar;
 }

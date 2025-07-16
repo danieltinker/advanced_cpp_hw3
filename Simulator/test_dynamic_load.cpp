@@ -9,7 +9,7 @@
 #include "AlgorithmRegistrar.h"
 
 int main() {
-    auto& registrar = AlgorithmRegistrar::getAlgorithmRegistrar();
+    auto& registrar = AlgorithmRegistrar::get();
     std::vector<std::string> names = {"Algorithm_315634022", "Bad"};
     for (const auto& name : names) {
         registrar.createAlgorithmFactoryEntry(name);
