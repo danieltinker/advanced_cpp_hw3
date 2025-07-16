@@ -173,6 +173,9 @@ SRC             := AlgorithmRegistrar.cpp   \
 OBJ             := $(SRC:.cpp=.o)
 LIB             := libsimreg.so
 
+TP_SRCS         := ThreadPool.cpp
+TP_OBJS         := ThreadPool.o
+
 all: $(LIB) test_dynamic_load simulator_315634022
 
 # compile .o from .cpp
@@ -182,6 +185,9 @@ all: $(LIB) test_dynamic_load simulator_315634022
 # build the registrar as a macOS dylib
 $(LIB): $(OBJ)
 	$(CXX) $(LDFLAGS_SO) -o $@ $^
+
+ThreadPool.o: ThreadPool.cpp ThreadPool.hpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # compile the test driver
 test_dynamic_load.o: test_dynamic_load.cpp AlgorithmRegistrar.h
@@ -196,9 +202,11 @@ main.o: main.cpp AlgorithmRegistrar.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # link simulator: export host symbols + embed rpath
-simulator_315634022: main.o $(LIB)
-	$(CXX) $(EXPORT_SYMS) -o $@ main.o $(LDLIBS_TEST) $(RPATH)
+# simulator_315634022: main.o $(LIB)
+# 	$(CXX) $(EXPORT_SYMS) -o $@ main.o $(LDLIBS_TEST) $(RPATH)
 
+simulator_315634022: main.o $(LIB) ThreadPool.o
+	$(CXX) $(EXPORT_SYMS) -o $@ main.o ThreadPool.o $(LDLIBS_TEST) $(RPATH)
 clean:
 	rm -f $(OBJ) $(LIB) test_dynamic_load main.o simulator_315634022
 

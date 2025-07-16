@@ -6,6 +6,7 @@
 
 #include "AlgorithmRegistrar.h"
 #include "GameManagerRegistrar.h"
+#include "ThreadPool.hpp"
 
 void printUsage(const char* prog) {
     std::cerr << "Usage: " << prog << " <-comparative|--competition> \\\n"
@@ -112,6 +113,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
+
     // 2) Dynamic‐load each Algorithm
     {
         auto& algoReg = AlgorithmRegistrar::getAlgorithmRegistrar();
@@ -138,5 +140,20 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "[Simulator] CLI parsed and plugins loaded successfully.\n";
+
+
+    UserCommon_315634022::ThreadPool pool(numThreads);
+    // Enqueue a dummy task to verify it runs
+    pool.enqueue([&] {
+        std::cout << "[Simulator] Hello from thread " << std::this_thread::get_id() << "\n";
+    });
+
+     pool.enqueue([&] {
+        std::cout << "[Simulator] 2nd task Hello from thread " << std::this_thread::get_id() << "\n";
+    });
+    // Shut it down (waits for all tasks)
+    pool.shutdown();
+
+    std::cout << "[Simulator] ThreadPool smoke‐test complete\n";
     return 0;
 }
