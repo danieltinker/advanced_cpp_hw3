@@ -40,46 +40,46 @@
 # 	rm -f $(OBJS) $(LIB) $(TEST_OBJ) $(TEST_EXE)
 
 ###############################################################################################################
-# Simulator/Makefile
+# # Simulator/Makefile
 
-CXX      := g++
-CXXFLAGS := -std=c++17 -fPIC -g -O0 -I. -I../common -I../UserCommon
-# LDFLAGS  := -shared
-LDFLAGS  := -dynamiclib -install_name @rpath/libsimreg.so
-LDLIBS   := -ldl
-RPATH    := -Wl,-rpath,@loader_path
+# CXX      := g++
+# CXXFLAGS := -std=c++17 -fPIC -g -O0 -I. -I../common -I../UserCommon
+# # LDFLAGS  := -shared
+# LDFLAGS  := -dynamiclib -install_name @rpath/libsimreg.so
+# LDLIBS   := -ldl
+# RPATH    := -Wl,-rpath,@loader_path
 
-# sources & targets
-SRC := AlgorithmRegistrar.cpp \
-       PlayerRegistration.cpp \
-       TankAlgorithmRegistration.cpp \
-       GameManagerRegistration.cpp \
-       GameManagerRegistrar.cpp
-OBJ := $(SRC:.cpp=.o)
-LIB := libsimreg.so
+# # sources & targets
+# SRC := AlgorithmRegistrar.cpp \
+#        PlayerRegistration.cpp \
+#        TankAlgorithmRegistration.cpp \
+#        GameManagerRegistration.cpp \
+#        GameManagerRegistrar.cpp
+# OBJ := $(SRC:.cpp=.o)
+# LIB := libsimreg.so
 
-all: $(LIB) test_dynamic_load
+# all: $(LIB) test_dynamic_load
 
-# compile each .cpp → .o
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+# # compile each .cpp → .o
+# %.o: %.cpp
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# build shared registration library
-$(LIB): $(OBJ)
-	$(CXX) $(LDFLAGS) -o $@ $^
+# # build shared registration library
+# $(LIB): $(OBJ)
+# 	$(CXX) $(LDFLAGS) -o $@ $^
 
-# compile the test driver
-test_dynamic_load.o: test_dynamic_load.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+# # compile the test driver
+# test_dynamic_load.o: test_dynamic_load.cpp
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# link test driver with embedded rpath
-test_dynamic_load: test_dynamic_load.o $(LIB)
-	$(CXX) -rdynamic \
-	        -o $@ test_dynamic_load.o \
-	        -L. -lsimreg $(LDLIBS) $(RPATH)
+# # link test driver with embedded rpath
+# test_dynamic_load: test_dynamic_load.o $(LIB)
+# 	$(CXX) -rdynamic \
+# 	        -o $@ test_dynamic_load.o \
+# 	        -L. -lsimreg $(LDLIBS) $(RPATH)
 
-clean:
-	rm -f $(OBJ) $(LIB) test_dynamic_load
+# clean:
+# 	rm -f $(OBJ) $(LIB) test_dynamic_load
 
 
 
@@ -97,6 +97,8 @@ clean:
 
 
 ##################
+
+
 # CXX      := g++
 # CXXFLAGS := -std=c++17 -fPIC -g -O0 -I. -I../common -I../UserCommon
 
@@ -144,3 +146,60 @@ clean:
 # 	rm -f $(OBJ) $(LIB) test_dynamic_load
 
 # .PHONY: all clean
+
+
+
+####################
+
+CXX             := g++
+CXXFLAGS        := -std=c++17 -fPIC -g -O0 -I. -I../common -I../UserCommon
+
+# build libsimreg.so as a macOS dynamic library
+LDFLAGS_SO      := -dynamiclib -install_name @rpath/libsimreg.so
+
+# for linking the test driver and simulator executable
+LDLIBS_TEST     := -L. -lsimreg -ldl
+# on macOS clang/ld, use -export_dynamic to expose all symbols
+EXPORT_SYMS     := -Wl,-export_dynamic
+# rpath so the loader always looks next to the exe for libsimreg.so
+RPATH           := -Wl,-rpath,@loader_path
+
+SRC             := AlgorithmRegistrar.cpp   \
+                   PlayerRegistration.cpp   \
+                   TankAlgorithmRegistration.cpp \
+                   GameManagerRegistration.cpp \
+                   GameManagerRegistrar.cpp
+
+OBJ             := $(SRC:.cpp=.o)
+LIB             := libsimreg.so
+
+all: $(LIB) test_dynamic_load simulator_315634022
+
+# compile .o from .cpp
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# build the registrar as a macOS dylib
+$(LIB): $(OBJ)
+	$(CXX) $(LDFLAGS_SO) -o $@ $^
+
+# compile the test driver
+test_dynamic_load.o: test_dynamic_load.cpp AlgorithmRegistrar.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# link test driver: link against libsimreg.so and embed rpath
+test_dynamic_load: test_dynamic_load.o $(LIB)
+	$(CXX) -o $@ test_dynamic_load.o $(LDLIBS_TEST) $(RPATH)
+
+# compile the simulator driver
+main.o: main.cpp AlgorithmRegistrar.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# link simulator: export host symbols + embed rpath
+simulator_315634022: main.o $(LIB)
+	$(CXX) $(EXPORT_SYMS) -o $@ main.o $(LDLIBS_TEST) $(RPATH)
+
+clean:
+	rm -f $(OBJ) $(LIB) test_dynamic_load main.o simulator_315634022
+
+.PHONY: all clean
