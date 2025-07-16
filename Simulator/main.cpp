@@ -148,8 +148,14 @@ int main(int argc, char* argv[]) {
         std::cout << "[Simulator] Hello from thread " << std::this_thread::get_id() << "\n";
     });
 
-     pool.enqueue([&] {
+    pool.enqueue([&] {
         std::cout << "[Simulator] 2nd task Hello from thread " << std::this_thread::get_id() << "\n";
+    });
+    pool.enqueue([&] {
+        std::cout << "[Simulator] 3nd task Hello from thread " << std::this_thread::get_id() << "\n";
+    });
+    pool.enqueue([&] {
+        std::cout << "[Simulator] 4nd task Hello from thread " << std::this_thread::get_id() << "\n";
     });
     // Shut it down (waits for all tasks)
     pool.shutdown();

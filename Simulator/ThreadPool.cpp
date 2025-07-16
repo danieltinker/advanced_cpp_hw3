@@ -6,7 +6,7 @@ namespace UserCommon_315634022 {
 ThreadPool::ThreadPool(size_t numThreads) {
     for (size_t i = 0; i < numThreads; ++i) {
         workers_.emplace_back([this, i] {
-            std::cout << "[ThreadPool] Worker " << i << " started\n";
+            std::cout << "[ThreadPool] Worker " << i << " started [ID = "<< std::this_thread::get_id()<<"]\n";
             while (true) {
                 std::function<void()> task;
                 {
