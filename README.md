@@ -10,19 +10,18 @@ Usage: simulator_<ID> <-comparative|-competition>
 # Competition Mode:
 ./simulator_315634022 \
   --competition \
-  game_maps_folder=../maps/ \   
+  game_maps_folder=../maps/ \
   game_manager=../GameManager/sos/libGameManager_315634022.so \
-  algorithms_folder=../Algorithm/sos \                   
+  algorithms_folder=../Algorithm/sos \
   num_threads=4 \
   --verbose
-
 # Comparative Mode:
 ./simulator_315634022 \
   --comparative \
   game_map=../maps/example.txt \
-  game_managers_folder=../GameManager/sos/ \
+  game_managers_folder=../GameManager/sos/ \                   
   algorithm1=../Algorithm/sos/libAlgorithm_315634022.so \
   algorithm2=../Algorithm/sos/libAlgorithmAlt_315634022.so \
   num_threads=4 \
   --verbose
-  
+
