@@ -54,17 +54,63 @@
 
 
 ####################
+
+# CXX       := g++
+# CXXFLAGS  := -fPIC -std=c++17 -I../common -I../UserCommon
+# LDFLAGS   := -shared
+# LIBS      := -L../Simulator -lsimreg
+
+# # output directory for .so files
+# LIBDIR    := sos
+
+# # object sets for each plugin
+# ALGO1_OBJS := TankAlgorithm_315634022.o Player_315634022.o
+# ALGO2_OBJS := TankAlgorithmAlt_315634022.o PlayerAlt_315634022.o
+
+# all: $(LIBDIR) \
+#      $(LIBDIR)/libAlgorithm_315634022.so \
+#      $(LIBDIR)/libAlgorithmAlt_315634022.so
+
+# # ensure the output directory exists
+# $(LIBDIR):
+# 	mkdir -p $@
+
+# # first algorithm .so
+# $(LIBDIR)/libAlgorithm_315634022.so: $(ALGO1_OBJS)
+# 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+# # second algorithm .so
+# $(LIBDIR)/libAlgorithmAlt_315634022.so: $(ALGO2_OBJS)
+# 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+# # generic rule for all .cpp -> .o
+# %.o: %.cpp
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# clean:
+# 	rm -rf *.o *.so $(LIBDIR)
+
+# .PHONY: all clean
+
+
+
+
+
 CXX       := g++
-CXXFLAGS  := -fPIC -std=c++17 -I../common -I../UserCommon
+CXXFLAGS  := -fPIC -std=c++17 -I../common -I../UserCommon -I.
 LDFLAGS   := -shared
 LIBS      := -L../Simulator -lsimreg
 
 # output directory for .so files
 LIBDIR    := sos
 
+# sources for each plugin
+ALGO1_SRC := TankAlgorithm_315634022.cpp EvasiveTank.cpp Player_315634022.cpp
+ALGO2_SRC := TankAlgorithmAlt_315634022.cpp PlayerAlt_315634022.cpp
+
 # object sets for each plugin
-ALGO1_OBJS := TankAlgorithm_315634022.o Player_315634022.o
-ALGO2_OBJS := TankAlgorithmAlt_315634022.o PlayerAlt_315634022.o
+ALGO1_OBJS := $(ALGO1_SRC:.cpp=.o)
+ALGO2_OBJS := $(ALGO2_SRC:.cpp=.o)
 
 all: $(LIBDIR) \
      $(LIBDIR)/libAlgorithm_315634022.so \
@@ -87,7 +133,7 @@ $(LIBDIR)/libAlgorithmAlt_315634022.so: $(ALGO2_OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf *.o *.so $(LIBDIR)
+	rm -f $(ALGO1_OBJS) $(ALGO2_OBJS)
+	rm -rf $(LIBDIR)
 
 .PHONY: all clean
-
