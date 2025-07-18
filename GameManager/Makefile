@@ -29,29 +29,59 @@
 
 
 
-CXX       := g++
-CXXFLAGS  := -fPIC -std=c++17 -I../common -I../UserCommon
-LDFLAGS   := -shared
-LIBS      := -L../Simulator -lsimreg
+# CXX       := g++
+# CXXFLAGS  := -fPIC -std=c++17 -I../common -I../UserCommon
+# LDFLAGS   := -shared
+# LIBS      := -L../Simulator -lsimreg
 
-# output directory for .so files
-LIBDIR    := sos
+# # output directory for .so files
+# LIBDIR    := sos
 
-all: $(LIBDIR) \
-     $(LIBDIR)/libGameManager_315634022.so
+# all: $(LIBDIR) \
+#      $(LIBDIR)/libGameManager_315634022.so
 
-# ensure the output directory exists
-$(LIBDIR):
-	mkdir -p $@
+# # ensure the output directory exists
+# $(LIBDIR):
+# 	mkdir -p $@
 
-$(LIBDIR)/libGameManager_315634022.so: GameManager_315634022.o
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+# $(LIBDIR)/libGameManager_315634022.so: GameManager_315634022.o
+# 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-# compile the single GameManager .cpp
-GameManager_315634022.o: GameManager_315634022.cpp GameManager_315634022.h
+# # compile the single GameManager .cpp
+# GameManager_315634022.o: GameManager_315634022.cpp GameManager_315634022.h
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# clean:
+# 	rm -rf *.o *.so $(LIBDIR)
+
+# .PHONY: all clean
+
+
+# GameManager/Makefile
+
+CXX        := g++
+CXXFLAGS   := -std=c++17 -fPIC -Wall -Wextra \
+               -I$(PROJECT_ROOT)/common \
+               -Iinclude
+LDFLAGS    := -shared
+
+SRCDIR     := src
+INCDIR     := include
+
+SRCS       := $(wildcard $(SRCDIR)/*.cpp)
+OBJS       := $(SRCS:$(SRCDIR)/%.cpp=$(SRCDIR)/%.o)
+
+TARGET     := GameManager_315634022.so
+
+all: $(TARGET)
+
+# Compile each .cpp into .o
+$(SRCDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-clean:
-	rm -rf *.o *.so $(LIBDIR)
+# Link to shared object
+$(TARGET): $(OBJS)
+	$(CXX) $(LDFLAGS) $^ -o $@
 
-.PHONY: all clean
+clean:
+	rm -f $(SRCDIR)/*.o $(TARGET)
