@@ -22,6 +22,9 @@
 // } // namespace GameManager_315634022
 // GameManager/GameManager_315634022.h
 
+
+
+// starting reconstruction of GM!
 #pragma once
 
 #include <AbstractGameManager.h>
