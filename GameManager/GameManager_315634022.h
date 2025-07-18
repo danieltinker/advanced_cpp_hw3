@@ -54,36 +54,16 @@ public:
         TankAlgorithmFactory fac2
     ) override;
 
-    // 8‐way directions
-    enum Dir8 { N = 0, NE, E, SE, S, SW, W, NW };
-
-    // deltas for moving in each of the 8 directions
-    static constexpr int DX[8] = {  0,  1,  1,  1,  0, -1, -1, -1 };
-    static constexpr int DY[8] = { -1, -1,  0,  1,  1,  1,  0, -1 };
-
-    // make these public so external code can alias them if desired
-    struct Tank {
-        int x, y;
-        Dir8 dir;
-        int shells;
-        bool alive;
-        std::unique_ptr<TankAlgorithm> alg;
-    };
-
-    struct Bullet {
-        int x, y;
-        Dir8 dir;
-        int owner;   // 0 or 1
-        bool active;
-    };
-
 private:
-    bool verbose_;
-    std::vector<Tank>   tanks_;
-    std::vector<Bullet> bullets_;
-    Player*             players_[2];
-    const SatelliteView* map_;
-    size_t              width_, height_;
+    GameState    game_state_;
+    std::string  loaded_map_file_;
+
+    // bool verbose_;
+    // std::vector<Tank>   tanks_;
+    // std::vector<Bullet> bullets_;
+    // Player*             players_[2];
+    // const SatelliteView* map_;
+    // size_t              width_, height_;
 
     void debug(const std::string& msg);
 
@@ -92,10 +72,10 @@ private:
         TankAlgorithmFactory fac1,
         TankAlgorithmFactory fac2
     );
-    void applyBulletMovement();
-    void resolveCollisions();
-    bool oneSideDead() const;
-    void advanceOneTurn();
+    // void applyBulletMovement();
+    // void resolveCollisions();
+    // bool oneSideDead() const;
+    // void advanceOneTurn();
 };
 
 } // namespace GameManager_315634022

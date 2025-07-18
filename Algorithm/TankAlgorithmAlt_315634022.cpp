@@ -11,7 +11,6 @@ public:
     }
     void updateBattleInfo(BattleInfo&) override {}
 };
-
 REGISTER_TANK_ALGORITHM(TankAlgorithmAlt_315634022)
 
 } // namespace AlgorithmAlt_315634022
