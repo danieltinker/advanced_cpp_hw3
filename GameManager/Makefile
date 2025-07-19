@@ -99,10 +99,13 @@ CXXFLAGS := -std=c++17 -fPIC -Wall -Wextra \
 LDFLAGS  := -shared
 
 SRCDIR   := src
-SRCS     := $(wildcard $(SRCDIR)/*.cpp)
+SRCS     := $(wildcard src/*.cpp) \
+           $(PROJECT_ROOT)/Simulator/GameManagerRegistration.cpp \
+           $(PROJECT_ROOT)/Simulator/GameManagerRegistrar.cpp
 OBJS     := $(patsubst $(SRCDIR)/%.cpp,$(SRCDIR)/%.o,$(SRCS))
 
 TARGET   := GameManager_315634022.so
+
 
 all: $(TARGET)
 
@@ -110,7 +113,7 @@ $(SRCDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJS)
-	$(CXX) $(LDFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
 
 clean:
 	rm -f $(SRCDIR)/*.o $(TARGET)
