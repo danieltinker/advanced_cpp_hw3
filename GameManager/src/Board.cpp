@@ -28,6 +28,7 @@ void Board::clearShellMarks() {
 
 void Board::loadFromSatelliteView(const SatelliteView& sv) {
     // Use our own rows_ and cols_, not legacy width_/height_!
+    
     for (std::size_t y = 0; y < rows_; ++y) {
         for (std::size_t x = 0; x < cols_; ++x) {
             char c = sv.getObjectAt(x, y);

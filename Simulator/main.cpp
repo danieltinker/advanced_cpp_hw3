@@ -144,10 +144,13 @@ static int runComparative(const Config& cfg) {
     // 2) Load Algorithms
     auto& algoReg = AlgorithmRegistrar::get();
     std::vector<void*> algoHandles;
+    std::cout << "[DEBUG] About to load " << 2 << " algorithm plugins\n";
     for (auto const& algPath : {cfg.algorithm1, cfg.algorithm2}) {
+        std::cout << "[DEBUG]  Loading algorithm: " << algPath << "\n";
         std::string name = stripSo(algPath);
         algoReg.createAlgorithmFactoryEntry(name);
         void* h = dlopen(algPath.c_str(), RTLD_NOW);
+        std::cout << "[DEBUG]   dlopened " << name << " @ " << h << "\n";
         if (!h) {
             std::cerr << "Error: dlopen Algo '" << name << "' failed: " << dlerror() << "\n";
             return 1;
@@ -159,6 +162,8 @@ static int runComparative(const Config& cfg) {
             dlclose(h);
             return 1;
         }
+        std::cout << "[DEBUG]   validated registration for " << name << "\n";
+
         algoHandles.push_back(h);
     }
 
@@ -174,7 +179,9 @@ static int runComparative(const Config& cfg) {
     }
 
     std::vector<void*> gmHandles;
+    std::cout << "[DEBUG] About to load GameManager plugins from '" << cfg.game_managers_folder << "'\n";
     for (auto const& gmPath : gmPaths) {
+        std::cout << "[DEBUG]  Loading GM: " << gmPath << "\n";
         std::string name = stripSo(gmPath);
         gmReg.createGameManagerEntry(name);
         void* h = dlopen(gmPath.c_str(), RTLD_NOW);
@@ -182,6 +189,8 @@ static int runComparative(const Config& cfg) {
             std::cerr << "Error: dlopen GM '" << name << "' failed: " << dlerror() << "\n";
             return 1;
         }
+        std::cout << "[DEBUG]   dlopened GM " << name << " @ " << h << "\n";
+
         try { gmReg.validateLastRegistration(); }
         catch (...) {
             std::cerr << "Error: GM registration failed for '" << name << "'\n";
@@ -189,6 +198,7 @@ static int runComparative(const Config& cfg) {
             dlclose(h);
             return 1;
         }
+        std::cout << "[DEBUG]   validated GM registration for " << name << "\n";
         gmHandles.push_back(h);
     }
 
