@@ -42,7 +42,7 @@ GameResult GameManager::run(
     }
 
     // 1) Build the board from SatelliteView
-    Board board(map_width, map_height);
+    Board board(map_width, map_height,verbose_);
     board.loadFromSatelliteView(satView);
 
     // 2) Construct the GameState (injection‐style ctor)
@@ -54,7 +54,8 @@ GameResult GameManager::run(
         player1, name1,
         player2, name2,
         std::move(factory1),
-        std::move(factory2)
+        std::move(factory2),
+        verbose_
     );
 
     // 3) Print initial board

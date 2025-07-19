@@ -34,7 +34,8 @@ public:
         Player& player2,
         const std::string& name2,
         TankAlgorithmFactory algoFactory1,
-        TankAlgorithmFactory algoFactory2
+        TankAlgorithmFactory algoFactory2,
+        bool verbose
     );
     ~GameState();
 
@@ -77,6 +78,7 @@ private:
     static const char* directionToArrow(int dir);
 
     // ---- Internal state ----
+    bool                     verbose_;
     Board                    board_;
     std::string              map_name_;
     std::size_t              max_steps_, currentStep_;

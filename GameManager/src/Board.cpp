@@ -1,8 +1,8 @@
 // src/Board.cpp
 #include "Board.h"
 #include <iostream>
-Board::Board(std::size_t rows, std::size_t cols)
-  : rows_(rows), cols_(cols),
+Board::Board(std::size_t rows, std::size_t cols, bool verbose)
+  : rows_(rows), cols_(cols), verbose_(verbose),
     grid_(rows, std::vector<Cell>(cols))
 {}
 
@@ -43,6 +43,8 @@ void Board::loadFromSatelliteView(const SatelliteView& sv) {
     }
 
     // DEBUG: dump entire board
+    if (verbose_) {
+
     std::cout << "[DEBUG] Board after loadFromSatelliteView (" 
               << rows_ << "×" << cols_ << "):\n";
     for (std::size_t y = 0; y < rows_; ++y) {
@@ -56,6 +58,7 @@ void Board::loadFromSatelliteView(const SatelliteView& sv) {
             std::cout << d;
         }
         std::cout << "\n";
+    }
     }
 }
 

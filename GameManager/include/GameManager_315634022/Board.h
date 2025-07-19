@@ -24,7 +24,7 @@ struct Cell {
 class Board {
 public:
     Board() = default;
-    Board(std::size_t rows, std::size_t cols);
+    Board(std::size_t rows, std::size_t cols,bool verbose);
 
     std::size_t getRows()   const { return rows_; }
     std::size_t getCols()   const { return cols_; }
@@ -52,6 +52,7 @@ public:
     void loadFromSatelliteView(const SatelliteView& view);
 
 private:
+    bool verbose_;
     std::size_t rows_ = 0, cols_ = 0;
     std::vector<std::vector<Cell>> grid_;
 };

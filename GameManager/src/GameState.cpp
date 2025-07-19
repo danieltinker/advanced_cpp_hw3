@@ -16,7 +16,8 @@ GameState::GameState(
     Player&                player2,
     const std::string&     name2,
     TankAlgorithmFactory   factory1,
-    TankAlgorithmFactory   factory2
+    TankAlgorithmFactory   factory2,
+    bool                   verbose
 )
   : board_(std::move(board))
   , map_name_(std::move(map_name))
@@ -31,6 +32,7 @@ GameState::GameState(
   , name2_(name2)
   , algoFactory1_(std::move(factory1))
   , algoFactory2_(std::move(factory2))
+  , verbose_(verbose)
 {
     // --- Initialize tanks from board ---
     rows_ = board_.getRows();
@@ -72,7 +74,8 @@ GameState::GameState(
             all_tank_algorithms_.push_back(algoFactory2_(ts.player_index, ts.tank_index));
     }
 
-    
+    if (verbose_) {
+
     size_t count1 = 0, count2 = 0;
     for (auto& ts : all_tanks_) {
         if (ts.player_index == 1) ++count1;
@@ -84,7 +87,7 @@ GameState::GameState(
         std::cout << "[DEBUG]  Tank(" << ts.player_index << "," << ts.tank_index
                 << ") at (" << ts.x << "," << ts.y << ")\n";
     }
-
+    }
 
     // Shells & end‐state
     shells_.clear();
@@ -121,11 +124,12 @@ std::string GameState::advanceOneTurn() {
     std::vector<ActionRequest> actions(N, ActionRequest::DoNothing);
     std::vector<bool> ignored(N,false), killed(N,false);
 
+    if (verbose_) {
 
     std::cout << "[DEBUG] advanceOneTurn called — step=" << currentStep_ + 1
           << ", board=" << cols_ << "x" << rows_
           << ", num_shells=" << num_shells_ << "\n";
-          
+    }      
      // 1) Gather raw requests
     for (size_t k = 0; k < N; ++k) {
         auto& ts  = all_tanks_[k];

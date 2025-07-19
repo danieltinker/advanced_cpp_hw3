@@ -29,7 +29,7 @@ struct MapData {
     size_t maxSteps, numShells;
 };
 
-static MapData loadMapWithParams(const std::string& path) {
+static MapData loadMapWithParams(const std::string& path, bool verbose) {
     std::ifstream in(path);
     if (!in.is_open()) {
         throw std::runtime_error("Failed to open map file: " + path);
@@ -62,11 +62,13 @@ static MapData loadMapWithParams(const std::string& path) {
         }
     }
     // DEBUG: dump header
+    if (verbose) {
+
     std::cout << "[DEBUG] Parsed Map — rows=" << rows 
               << ", cols=" << cols 
               << ", maxSteps=" << maxSteps 
               << ", numShells=" << numShells << "\n";
-
+    }
     // guard against missing lines
     size_t actualLines = gridLines.size();
     if (actualLines < rows) {
@@ -74,8 +76,11 @@ static MapData loadMapWithParams(const std::string& path) {
                   << " grid lines, but expected " << rows << "\n";
     }
     // only iterate over what's actually present
+    if (verbose) {
+
     for (size_t r = 0; r < actualLines && r < rows; ++r) {
         std::cout << "[DEBUG] row " << r << ": " << gridLines[r] << "\n";
+    }
     }
     if (rows==0 || cols==0)
         throw std::runtime_error("Missing Rows or Cols in map header");
@@ -134,7 +139,7 @@ static int runComparative(const Config& cfg) {
     // 1) Load map + params
     MapData md;
     try {
-        md = loadMapWithParams(cfg.game_map);
+        md = loadMapWithParams(cfg.game_map, cfg.verbose);
     } catch (const std::exception& ex) {
         std::cerr << "Error loading map: " << ex.what() << "\n";
         return 1;
@@ -144,13 +149,19 @@ static int runComparative(const Config& cfg) {
     // 2) Load Algorithms
     auto& algoReg = AlgorithmRegistrar::get();
     std::vector<void*> algoHandles;
-    std::cout << "[DEBUG] About to load " << 2 << " algorithm plugins\n";
+    if (cfg.verbose) {
+        std::cout << "[DEBUG] About to load " << 2 << " algorithm plugins\n";
+    }
     for (auto const& algPath : {cfg.algorithm1, cfg.algorithm2}) {
-        std::cout << "[DEBUG]  Loading algorithm: " << algPath << "\n";
+        if (cfg.verbose) {
+            std::cout << "[DEBUG]  Loading algorithm: " << algPath << "\n";
+        }
         std::string name = stripSo(algPath);
         algoReg.createAlgorithmFactoryEntry(name);
         void* h = dlopen(algPath.c_str(), RTLD_NOW);
-        std::cout << "[DEBUG]   dlopened " << name << " @ " << h << "\n";
+        if (cfg.verbose) {
+            std::cout << "[DEBUG]   dlopened " << name << " @ " << h << "\n";
+        }
         if (!h) {
             std::cerr << "Error: dlopen Algo '" << name << "' failed: " << dlerror() << "\n";
             return 1;
@@ -162,8 +173,9 @@ static int runComparative(const Config& cfg) {
             dlclose(h);
             return 1;
         }
-        std::cout << "[DEBUG]   validated registration for " << name << "\n";
-
+        if (cfg.verbose) {
+            std::cout << "[DEBUG]   validated registration for " << name << "\n";
+        }
         algoHandles.push_back(h);
     }
 
@@ -179,9 +191,13 @@ static int runComparative(const Config& cfg) {
     }
 
     std::vector<void*> gmHandles;
-    std::cout << "[DEBUG] About to load GameManager plugins from '" << cfg.game_managers_folder << "'\n";
+    if (cfg.verbose) {
+        std::cout << "[DEBUG] About to load GameManager plugins from '" << cfg.game_managers_folder << "'\n";
+    }
     for (auto const& gmPath : gmPaths) {
-        std::cout << "[DEBUG]  Loading GM: " << gmPath << "\n";
+        if (cfg.verbose) {
+            std::cout << "[DEBUG]  Loading GM: " << gmPath << "\n";
+        }
         std::string name = stripSo(gmPath);
         gmReg.createGameManagerEntry(name);
         void* h = dlopen(gmPath.c_str(), RTLD_NOW);
@@ -189,8 +205,9 @@ static int runComparative(const Config& cfg) {
             std::cerr << "Error: dlopen GM '" << name << "' failed: " << dlerror() << "\n";
             return 1;
         }
-        std::cout << "[DEBUG]   dlopened GM " << name << " @ " << h << "\n";
-
+        if (cfg.verbose) {
+            std::cout << "[DEBUG]   dlopened GM " << name << " @ " << h << "\n";
+        }
         try { gmReg.validateLastRegistration(); }
         catch (...) {
             std::cerr << "Error: GM registration failed for '" << name << "'\n";
@@ -198,7 +215,9 @@ static int runComparative(const Config& cfg) {
             dlclose(h);
             return 1;
         }
-        std::cout << "[DEBUG]   validated GM registration for " << name << "\n";
+        if (cfg.verbose) {
+            std::cout << "[DEBUG]   validated GM registration for " << name << "\n";
+        }
         gmHandles.push_back(h);
     }
 
@@ -329,7 +348,7 @@ static int runCompetition(const Config& cfg) {
     std::vector<size_t>                         mapRows, mapCols, mapMaxSteps, mapNumShells;
     for (auto const& mapFile : maps) {
         try {
-            MapData md = loadMapWithParams(mapFile);
+            MapData md = loadMapWithParams(mapFile,cfg.verbose);
             mapViews.emplace_back(std::move(md.view));
             mapCols .push_back(md.cols);
             mapRows .push_back(md.rows);

@@ -25,3 +25,12 @@ Usage: simulator_<ID> <-comparative|-competition>
   num_threads=4 \
   --verbose
 
+
+
+./simulator_315634022 --comparative \
+  game_map=../maps/example.txt \
+  game_managers_folder=../GameManager/sos/ \
+  algorithm1=../Algorithm/sos/libAlgorithm_315634022.so \
+  algorithm2=../Algorithm/sos/libAlgorithmAlt_315634022.so \
+  num_threads=4 \
+  --verbose
