@@ -55,42 +55,42 @@
 
 ####################
 
-CXX       := g++
-CXXFLAGS  := -fPIC -std=c++17 -I../common -I../UserCommon
-LDFLAGS   := -shared
-LIBS      := -L../Simulator -lsimreg
+# CXX       := g++
+# CXXFLAGS  := -fPIC -std=c++17 -I../common -I../UserCommon
+# LDFLAGS   := -shared
+# LIBS      := -L../Simulator -lsimreg
 
-# output directory for .so files
-LIBDIR    := sos
+# # output directory for .so files
+# LIBDIR    := sos
 
-# object sets for each plugin
-ALGO1_OBJS := TankAlgorithm_315634022.o Player_315634022.o
-ALGO2_OBJS := TankAlgorithmAlt_315634022.o PlayerAlt_315634022.o
+# # object sets for each plugin
+# ALGO1_OBJS := TankAlgorithm_315634022.o Player_315634022.o
+# ALGO2_OBJS := TankAlgorithmAlt_315634022.o PlayerAlt_315634022.o
 
-all: $(LIBDIR) \
-     $(LIBDIR)/libAlgorithm_315634022.so \
-     $(LIBDIR)/libAlgorithmAlt_315634022.so
+# all: $(LIBDIR) \
+#      $(LIBDIR)/libAlgorithm_315634022.so \
+#      $(LIBDIR)/libAlgorithmAlt_315634022.so
 
-# ensure the output directory exists
-$(LIBDIR):
-	mkdir -p $@
+# # ensure the output directory exists
+# $(LIBDIR):
+# 	mkdir -p $@
 
-# first algorithm .so
-$(LIBDIR)/libAlgorithm_315634022.so: $(ALGO1_OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+# # first algorithm .so
+# $(LIBDIR)/libAlgorithm_315634022.so: $(ALGO1_OBJS)
+# 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-# second algorithm .so
-$(LIBDIR)/libAlgorithmAlt_315634022.so: $(ALGO2_OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+# # second algorithm .so
+# $(LIBDIR)/libAlgorithmAlt_315634022.so: $(ALGO2_OBJS)
+# 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-# generic rule for all .cpp -> .o
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+# # generic rule for all .cpp -> .o
+# %.o: %.cpp
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-clean:
-	rm -rf *.o *.so $(LIBDIR)
+# clean:
+# 	rm -rf *.o *.so $(LIBDIR)
 
-.PHONY: all clean
+# .PHONY: all clean
 
 
 # Makefile for building the Algorithm plugin (libAlgorithm_315634022.so)
@@ -139,3 +139,47 @@ clean:
 # clean:
 # 	rm -f $(OBJS)
 # 	rm -rf $(TARGET_DIR)
+
+
+# ===== Option 1: Rely on simulator executable to provide registrar symbols =====
+
+# Root of the Simulator workspace (where common/ and Simulator/ live)
+PROJECT_ROOT ?= ..
+
+# Compiler and flags
+CXX       := g++
+CXXFLAGS  := -std=c++17 -fPIC -Wall -Wextra \
+              -I$(PROJECT_ROOT)/common \
+              -I$(PROJECT_ROOT)/UserCommon \
+              -Iinclude
+# Allow undefined symbols to be resolved at runtime by host
+LDFLAGS   := -shared -undefined dynamic_lookup
+
+# Your algorithm sources
+SOURCES   := TankAlgorithm_315634022.cpp \
+             Player_315634022.cpp
+OBJS      := $(SOURCES:.cpp=.o)
+
+# Plugin registration stub sources only
+SIM_SRCS  := $(PROJECT_ROOT)/Simulator/PlayerRegistration.cpp \
+             $(PROJECT_ROOT)/Simulator/TankAlgorithmRegistration.cpp
+
+# Output directory and target
+TARGET_DIR := sos
+TARGET      := $(TARGET_DIR)/libAlgorithm_315634022.so
+
+.PHONY: all clean
+all: $(TARGET)
+
+$(TARGET_DIR):
+	mkdir -p $(TARGET_DIR)
+
+$(TARGET): $(OBJS) | $(TARGET_DIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(SIM_SRCS) -o $@
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS)
+	rm -rf $(TARGET_DIR)

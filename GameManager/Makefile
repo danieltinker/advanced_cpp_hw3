@@ -93,7 +93,7 @@
 PROJECT_ROOT ?= ..
 
 CXX      := g++
-CXXFLAGS := -std=c++17 -fPIC -Wall -Wextra \
+CXXFLAGS := -std=c++17 -g -O0 -fPIC -Wall -Wextra \
             -I$(PROJECT_ROOT)/common \
             -Iinclude/GameManager_315634022
 LDFLAGS  := -shared
