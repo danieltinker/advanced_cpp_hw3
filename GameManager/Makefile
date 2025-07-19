@@ -1,3 +1,50 @@
+# Makefile for building the GameManager plugin (GameManager_315634022.so)
+
+# Root of the Simulator workspace (for headers)
+PROJECT_ROOT ?= ..
+
+# Compiler and flags
+CXX      := g++
+CXXFLAGS := -std=c++17 -fPIC -Wall -Wextra \
+            -I$(PROJECT_ROOT)/common \
+            -Iinclude/GameManager_315634022
+# Allow undefined refs to be resolved by the simulator executable
+LDFLAGS  := -shared -undefined dynamic_lookup
+
+# Output
+TARGET_DIR := sos
+TARGET     := $(TARGET_DIR)/GameManager_315634022.so
+
+# Source files
+SRCS := \
+    src/Board.cpp \
+    src/GameManager.cpp \
+    src/GameState.cpp \
+    src/MyBattleInfo.cpp \
+    src/MySatelliteView.cpp \
+    src/Tank.cpp
+
+OBJS := $(SRCS:.cpp=.o)
+
+.PHONY: all clean
+all: $(TARGET)
+
+# Ensure output directory exists
+$(TARGET_DIR):
+	mkdir -p $(TARGET_DIR)
+
+# Link the plugin
+$(TARGET): $(OBJS) | $(TARGET_DIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) -o $@
+
+# Compile each .cpp
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS)
+	rm -rf $(TARGET_DIR)
+
 # # GameManager/Makefile
 
 # # CXX       := /usr/local/bin/g++-15
@@ -89,31 +136,31 @@
 # GameManager/Makefile
 # GameManager/Makefile
 
-# “common/” lives one level up from GameManager/
-PROJECT_ROOT ?= ..
+# # “common/” lives one level up from GameManager/
+# PROJECT_ROOT ?= ..
 
-CXX      := g++
-CXXFLAGS := -std=c++17 -g -O0 -fPIC -Wall -Wextra \
-            -I$(PROJECT_ROOT)/common \
-            -Iinclude/GameManager_315634022
-LDFLAGS  := -shared
+# CXX      := g++
+# CXXFLAGS := -std=c++17 -g -O0 -fPIC -Wall -Wextra \
+#             -I$(PROJECT_ROOT)/common \
+#             -Iinclude/GameManager_315634022
+# LDFLAGS  := -shared
 
-SRCDIR   := src
-SRCS     := $(wildcard src/*.cpp) \
-           $(PROJECT_ROOT)/Simulator/GameManagerRegistration.cpp \
-           $(PROJECT_ROOT)/Simulator/GameManagerRegistrar.cpp
-OBJS     := $(patsubst $(SRCDIR)/%.cpp,$(SRCDIR)/%.o,$(SRCS))
+# SRCDIR   := src
+# SRCS     := $(wildcard src/*.cpp) \
+#            $(PROJECT_ROOT)/Simulator/GameManagerRegistration.cpp \
+#            $(PROJECT_ROOT)/Simulator/GameManagerRegistrar.cpp
+# OBJS     := $(patsubst $(SRCDIR)/%.cpp,$(SRCDIR)/%.o,$(SRCS))
 
-TARGET   := GameManager_315634022.so
+# TARGET   := GameManager_315634022.so
 
 
-all: $(TARGET)
+# all: $(TARGET)
 
-$(SRCDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+# $(SRCDIR)/%.o: $(SRCDIR)/%.cpp
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
+# $(TARGET): $(OBJS)
+# 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
 
-clean:
-	rm -f $(SRCDIR)/*.o $(TARGET)
+# clean:
+# 	rm -f $(SRCDIR)/*.o $(TARGET)
