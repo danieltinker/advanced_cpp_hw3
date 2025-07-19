@@ -1,6 +1,6 @@
 # Makefile for building the GameManager plugin (GameManager_315634022.so)
 
-# Root of the Simulator workspace (for headers)
+# Allow overriding the simulator workspace root
 PROJECT_ROOT ?= ..
 
 # Compiler and flags
@@ -8,42 +8,106 @@ CXX      := g++
 CXXFLAGS := -std=c++17 -fPIC -Wall -Wextra \
             -I$(PROJECT_ROOT)/common \
             -Iinclude/GameManager_315634022
-# Allow undefined refs to be resolved by the simulator executable
+
+# Linker flags: shared lib, defer undefined symbols to simulator
 LDFLAGS  := -shared -undefined dynamic_lookup
 
-# Output
-TARGET_DIR := sos
-TARGET     := $(TARGET_DIR)/GameManager_315634022.so
+# Directories
+SRC_DIR     := src
+BUILD_DIR   := build
+TARGET_DIR  := sos
 
-# Source files
-SRCS := \
-    src/Board.cpp \
-    src/GameManager.cpp \
-    src/GameState.cpp \
-    src/MyBattleInfo.cpp \
-    src/MySatelliteView.cpp \
-    src/Tank.cpp
+# Plugin name
+PLUGIN_NAME := GameManager_315634022.so
+TARGET      := $(TARGET_DIR)/$(PLUGIN_NAME)
 
-OBJS := $(SRCS:.cpp=.o)
+# Source and object files
+SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
 
 .PHONY: all clean
+
 all: $(TARGET)
 
-# Ensure output directory exists
-$(TARGET_DIR):
-	mkdir -p $(TARGET_DIR)
+# Ensure build and target dirs exist
+$(BUILD_DIR) $(TARGET_DIR):
+	@mkdir -p $@
 
-# Link the plugin
-$(TARGET): $(OBJS) | $(TARGET_DIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) -o $@
-
-# Compile each .cpp
-%.o: %.cpp
+# Compile .cpp -> .o in build dir
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Link plugin
+$(TARGET): $(OBJS) | $(TARGET_DIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
+
 clean:
-	rm -f $(OBJS)
-	rm -rf $(TARGET_DIR)
+	rm -rf $(BUILD_DIR) $(TARGET_DIR)
+
+
+# # Makefile for building the GameManager plugin (GameManager_315634022.so)
+
+# # Root of the Simulator workspace (for headers)
+# PROJECT_ROOT ?= ..
+
+# # Compiler and flags
+# CXX      := g++
+# CXXFLAGS := -std=c++17 -fPIC -Wall -Wextra \
+#             -I$(PROJECT_ROOT)/common \
+#             -Iinclude/GameManager_315634022
+# # Allow undefined refs to be resolved by the simulator executable
+# LDFLAGS  := -shared -undefined dynamic_lookup
+
+# # Output
+# TARGET_DIR := sos
+# TARGET     := $(TARGET_DIR)/GameManager_315634022.so
+
+# # Source files
+# SRCS := \
+#     src/Board.cpp \
+#     src/GameManager.cpp \
+#     src/GameState.cpp \
+#     src/MyBattleInfo.cpp \
+#     src/MySatelliteView.cpp \
+#     src/Tank.cpp
+
+# OBJS := $(SRCS:.cpp=.o)
+
+# .PHONY: all clean
+# all: $(TARGET)
+
+# # Ensure output directory exists
+# $(TARGET_DIR):
+# 	mkdir -p $(TARGET_DIR)
+
+# # Link the plugin
+# $(TARGET): $(OBJS) | $(TARGET_DIR)
+# 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) -o $@
+
+# # Compile each .cpp
+# %.o: %.cpp
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# clean:
+# 	rm -f $(OBJS)
+# 	rm -rf $(TARGET_DIR)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # # GameManager/Makefile
 
@@ -164,3 +228,7 @@ clean:
 
 # clean:
 # 	rm -f $(SRCDIR)/*.o $(TARGET)
+
+
+
+
