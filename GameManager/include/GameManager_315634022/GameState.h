@@ -1,12 +1,22 @@
 // GameState.h
 #pragma once
 
-#include <common/Board.h>
-#include <common/SatelliteView.h>
-#include <common/Player.h>
-#include <common/TankAlgorithmFactory.h>
-#include <common/ActionRequest.h>
-#include <common/GameResult.h>
+#include <cstddef>
+#include <string>
+#include <vector>
+#include <map>
+#include <set>
+#include <utility>
+#include <memory>
+
+#include <Board.h>
+#include <SatelliteView.h>
+#include <Player.h>
+// #include <TankAlgorithmFactory.h>
+#include <ActionRequest.h>
+#include <GameResult.h>
+
+#include "TankAlgorithm.h"
 
 namespace GameManager_315634022 {
 
@@ -39,6 +49,8 @@ public:
     void printBoard() const;
     void dumpStep(std::size_t turn) const;
     std::size_t getCurrentTurn() const;
+    /// Expose the current board for final‐state snapshotting
+    const Board& getBoard() const;
 
 private:
     // Sub‐step helpers (unchanged)

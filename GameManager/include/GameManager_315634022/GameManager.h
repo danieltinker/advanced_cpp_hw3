@@ -1,5 +1,5 @@
 #pragma once
-#include <common/AbstractGameManager.h>
+#include <AbstractGameManager.h>
 
 namespace GameManager_315634022 {
 

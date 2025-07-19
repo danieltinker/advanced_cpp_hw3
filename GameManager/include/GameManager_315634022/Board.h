@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <cstddef>
-#include <common/SatelliteView.h>
+#include <SatelliteView.h>
 /// Contents of a single board cell.
 enum class CellContent {
     EMPTY,
@@ -49,7 +49,7 @@ public:
     void clearTankMarks() {}
 
      /// Fill this board from the simulator’s map snapshot
-    void loadFromSatelliteView(const common::SatelliteView& view);
+    void loadFromSatelliteView(const SatelliteView& view);
 
 private:
     std::size_t rows_ = 0, cols_ = 0;

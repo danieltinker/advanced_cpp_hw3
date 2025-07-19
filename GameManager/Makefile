@@ -56,30 +56,59 @@
 
 # .PHONY: all clean
 
+# GameManager/Makefile
 
 # GameManager/Makefile
 
-CXX        := g++
-CXXFLAGS   := -std=c++17 -fPIC -Wall -Wextra \
-               -I$(PROJECT_ROOT)/common \
-               -Iinclude
-LDFLAGS    := -shared
+# # The simulator’s common/ folder is one level up
+# PROJECT_ROOT ?= ..
 
-SRCDIR     := src
-INCDIR     := include
+# CXX      := g++
+# CXXFLAGS := -std=c++17 -fPIC -Wall -Wextra \
+#             -I$(PROJECT_ROOT) \
+#             -Iinclude/GameManager_315634022
+# LDFLAGS  := -shared
 
-SRCS       := $(wildcard $(SRCDIR)/*.cpp)
-OBJS       := $(SRCS:$(SRCDIR)/%.cpp=$(SRCDIR)/%.o)
+# SRCDIR   := src
+# SRCS     := $(wildcard $(SRCDIR)/*.cpp)
+# OBJS     := $(patsubst $(SRCDIR)/%.cpp,$(SRCDIR)/%.o,$(SRCS))
 
-TARGET     := GameManager_315634022.so
+# TARGET   := GameManager_315634022.so
+
+# all: $(TARGET)
+
+# $(SRCDIR)/%.o: $(SRCDIR)/%.cpp
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# $(TARGET): $(OBJS)
+# 	$(CXX) $(LDFLAGS) $^ -o $@
+
+# clean:
+# 	rm -f $(SRCDIR)/*.o $(TARGET)
+
+# GameManager/Makefile
+# GameManager/Makefile
+
+# “common/” lives one level up from GameManager/
+PROJECT_ROOT ?= ..
+
+CXX      := g++
+CXXFLAGS := -std=c++17 -fPIC -Wall -Wextra \
+            -I$(PROJECT_ROOT)/common \
+            -Iinclude/GameManager_315634022
+LDFLAGS  := -shared
+
+SRCDIR   := src
+SRCS     := $(wildcard $(SRCDIR)/*.cpp)
+OBJS     := $(patsubst $(SRCDIR)/%.cpp,$(SRCDIR)/%.o,$(SRCS))
+
+TARGET   := GameManager_315634022.so
 
 all: $(TARGET)
 
-# Compile each .cpp into .o
 $(SRCDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Link to shared object
 $(TARGET): $(OBJS)
 	$(CXX) $(LDFLAGS) $^ -o $@
 

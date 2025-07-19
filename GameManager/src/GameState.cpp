@@ -821,3 +821,8 @@ void GameState::checkGameEndConditions() {
                    ", player2 has "+std::to_string(a2);
     }
 }
+
+//----------------------------------------------------------------------------  
+const Board& GameState::getBoard() const {
+    return board_;
+}

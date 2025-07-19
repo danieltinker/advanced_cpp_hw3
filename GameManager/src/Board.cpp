@@ -25,7 +25,7 @@ void Board::clearShellMarks() {
             cell.hasShellOverlay = false;
 }
 
-void Board::loadFromSatelliteView(const common::SatelliteView& view) {
+void Board::loadFromSatelliteView(const SatelliteView& view) {
     // assume rows_ and cols_ were set by your ctor
     for (std::size_t y = 0; y < rows_; ++y) {
         for (std::size_t x = 0; x < cols_; ++x) {

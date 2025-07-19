@@ -1,20 +1,20 @@
 #include "GameManager.h"
 #include "GameState.h"
-#include <common/GameResult.h>
-#include <common/Board.h>
-#include <common/SatelliteView.h>
+
+#include <GameResult.h>
+#include <Board.h>
+#include <SatelliteView.h>
+#include <GameManagerRegistration.h>
 
 #include <fstream>
 #include <iostream>
+#include <memory>
 
 namespace GameManager_315634022 {
 
 GameManager::GameManager(bool verbose)
   : verbose_(verbose)
-{}
-
-// The factory‐injected PlayerFactory/TankAlgorithmFactory should have already
-// been stored in members and used to construct game_state_ in your header.
+{ }
 
 GameResult GameManager::run(
     size_t map_width, size_t map_height,
@@ -41,92 +41,89 @@ GameResult GameManager::run(
         std::exit(1);
     }
 
-    // 1) Build the board from SatelliteView, then initialize GameState
+    // 1) Build the board from SatelliteView
     Board board(map_width, map_height);
     board.loadFromSatelliteView(satView);
 
-    game_state_.initialize(board, max_steps, num_shells);
+    // 2) Construct the GameState (injection‐style ctor)
+    GameState state(
+        std::move(board),
+        std::move(map_name),
+        max_steps,
+        num_shells,
+        player1, name1,
+        player2, name2,
+        std::move(factory1),
+        std::move(factory2)
+    );
 
-    // 2) Print initial board
+    // 3) Print initial board
     std::cout << "=== Start Position ===\n";
-    game_state_.printBoard();
+    state.printBoard();
 
-    // 3) Game loop
+    // 4) Game loop
     std::size_t turn = 1;
-    while (!game_state_.isGameOver()) {
-        // a) Print turn header + board
+    while (!state.isGameOver()) {
         std::cout << "=== Turn " << turn << " ===\n";
-        // b) Advance one full turn, capture the string of actions
-        std::string actions = game_state_.advanceOneTurn();
-        //    then print the updated board
-        game_state_.printBoard();
-        // c) Log that turn’s actions
+        std::string actions = state.advanceOneTurn();
+        state.printBoard();
         ofs << actions << "\n";
         ++turn;
     }
 
-    // 4) Final board + result
+    // 5) Final board + result
     std::cout << "=== Final Board ===\n";
-    game_state_.printBoard();
-    std::string result = game_state_.getResultString();
-    std::cout << result << "\n";
-    ofs << result << "\n";
-
+    state.printBoard();
+    std::string resultStr = state.getResultString();
+    std::cout << resultStr << "\n";
+    ofs << resultStr << "\n";
     ofs.close();
     std::cout << "Actions logged to: " << outFile << "\n";
 
-    // 5) Assemble and return GameResult
+    // 6) Assemble GameResult
     GameResult gm;
     gm.rounds = turn - 1;
 
-    // Grab the textual result to decide winner & reason:
-    std::string result = game_state_.getResultString();
-
-    if (result.rfind("Player 1 won", 0) == 0) {
+    if (resultStr.rfind("Player 1 won", 0) == 0) {
         gm.winner = 1;
         gm.reason = GameResult::ALL_TANKS_DEAD;
-        // parse “with X tanks still alive”
-        auto pos = result.find("with ") + 5;
-        auto end = result.find(" tanks", pos);
+        auto pos = resultStr.find("with ") + 5;
+        auto end = resultStr.find(" tanks", pos);
         gm.remaining_tanks = {
-            std::stoul(result.substr(pos, end - pos)), 
-            0
+            std::stoul(resultStr.substr(pos, end - pos)), 0
         };
     }
-    else if (result.rfind("Player 2 won", 0) == 0) {
+    else if (resultStr.rfind("Player 2 won", 0) == 0) {
         gm.winner = 2;
         gm.reason = GameResult::ALL_TANKS_DEAD;
-        auto pos = result.find("with ") + 5;
-        auto end = result.find(" tanks", pos);
+        auto pos = resultStr.find("with ") + 5;
+        auto end = resultStr.find(" tanks", pos);
         gm.remaining_tanks = {
-            0,
-            std::stoul(result.substr(pos, end - pos))
+            0, std::stoul(resultStr.substr(pos, end - pos))
         };
     }
-    else if (result.rfind("Tie, both players have zero tanks", 0) == 0) {
+    else if (resultStr.rfind("Tie, both players have zero tanks", 0) == 0) {
         gm.winner = 0;
         gm.reason = GameResult::ALL_TANKS_DEAD;
         gm.remaining_tanks = {0, 0};
     }
-    else {  // max‐steps tie
+    else {
+        // max‐steps tie
         gm.winner = 0;
         gm.reason = GameResult::MAX_STEPS;
-        // parse “player1 has A, player2 has B”
-        auto p1pos = result.find("player1 has ") + 12;
-        auto p1end = result.find(',', p1pos);
-        auto a1 = std::stoul(result.substr(p1pos, p1end - p1pos));
-        auto p2pos = result.find("player2 has ") + 12;
-        auto a2   = std::stoul(result.substr(p2pos));
+        auto p1pos = resultStr.find("player1 has ") + 12;
+        auto p1end = resultStr.find(',', p1pos);
+        auto a1 = std::stoul(resultStr.substr(p1pos, p1end - p1pos));
+        auto p2pos = resultStr.find("player2 has ") + 12;
+        auto a2   = std::stoul(resultStr.substr(p2pos));
         gm.remaining_tanks = {a1, a2};
     }
 
-    // Capture the final board as a SatelliteView for the Simulator:
-    struct FinalBoardView : public common::SatelliteView {
-        FinalBoardView(const Board& b)
-          : board_(b) {}
-        char getObjectAt(std::size_t x, std::size_t y) const override {
-            auto c = board_.getCell(x, y).content;
-            switch (c) {
+    // 7) Capture final board via SatelliteView subclass
+    struct FinalBoardView : public SatelliteView {
+        FinalBoardView(const Board& b) : board_(b) {}
+        char getObjectAt(size_t x, size_t y) const override {
+            switch (board_.getCell(x, y).content) {
                 case CellContent::WALL:  return '#';
                 case CellContent::MINE:  return '@';
                 case CellContent::TANK1: return '1';
@@ -137,14 +134,12 @@ GameResult GameManager::run(
     private:
         Board board_;
     };
-    gm.gameState = std::make_unique<FinalBoardView>(board);
+    gm.gameState = std::make_unique<FinalBoardView>(state.getBoard());
 
-    return gm;
     return gm;
 }
 
 } // namespace GameManager_315634022
 
-// Register for dynamic loading:
-#include <common/GameManagerRegistration.h>
+// Register for dynamic loading
 REGISTER_GAME_MANAGER(GameManager_315634022::GameManager)
