@@ -72,6 +72,20 @@ GameState::GameState(
             all_tank_algorithms_.push_back(algoFactory2_(ts.player_index, ts.tank_index));
     }
 
+    
+    size_t count1 = 0, count2 = 0;
+    for (auto& ts : all_tanks_) {
+        if (ts.player_index == 1) ++count1;
+        else if (ts.player_index == 2) ++count2;
+    }
+    std::cout << "[DEBUG] Spawned tanks — player1=" << count1 
+            << ", player2=" << count2 << "\n";
+    for (auto& ts : all_tanks_) {
+        std::cout << "[DEBUG]  Tank(" << ts.player_index << "," << ts.tank_index
+                << ") at (" << ts.x << "," << ts.y << ")\n";
+    }
+
+
     // Shells & end‐state
     shells_.clear();
     toRemove_.clear();
@@ -107,6 +121,11 @@ std::string GameState::advanceOneTurn() {
     std::vector<ActionRequest> actions(N, ActionRequest::DoNothing);
     std::vector<bool> ignored(N,false), killed(N,false);
 
+
+    std::cout << "[DEBUG] advanceOneTurn called — step=" << currentStep_ + 1
+          << ", board=" << cols_ << "x" << rows_
+          << ", num_shells=" << num_shells_ << "\n";
+          
      // 1) Gather raw requests
     for (size_t k = 0; k < N; ++k) {
         auto& ts  = all_tanks_[k];

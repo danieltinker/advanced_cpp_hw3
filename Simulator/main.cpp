@@ -61,7 +61,22 @@ static MapData loadMapWithParams(const std::string& path) {
             if (isGrid) gridLines.push_back(line);
         }
     }
+    // DEBUG: dump header
+    std::cout << "[DEBUG] Parsed Map — rows=" << rows 
+              << ", cols=" << cols 
+              << ", maxSteps=" << maxSteps 
+              << ", numShells=" << numShells << "\n";
 
+    // guard against missing lines
+    size_t actualLines = gridLines.size();
+    if (actualLines < rows) {
+        std::cerr << "[WARN ] Only " << actualLines 
+                  << " grid lines, but expected " << rows << "\n";
+    }
+    // only iterate over what's actually present
+    for (size_t r = 0; r < actualLines && r < rows; ++r) {
+        std::cout << "[DEBUG] row " << r << ": " << gridLines[r] << "\n";
+    }
     if (rows==0 || cols==0)
         throw std::runtime_error("Missing Rows or Cols in map header");
     if (gridLines.size() != rows) {
