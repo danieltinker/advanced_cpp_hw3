@@ -55,87 +55,87 @@
 
 ####################
 
-# CXX       := g++
-# CXXFLAGS  := -fPIC -std=c++17 -I../common -I../UserCommon
-# LDFLAGS   := -shared
-# LIBS      := -L../Simulator -lsimreg
-
-# # output directory for .so files
-# LIBDIR    := sos
-
-# # object sets for each plugin
-# ALGO1_OBJS := TankAlgorithm_315634022.o Player_315634022.o
-# ALGO2_OBJS := TankAlgorithmAlt_315634022.o PlayerAlt_315634022.o
-
-# all: $(LIBDIR) \
-#      $(LIBDIR)/libAlgorithm_315634022.so \
-#      $(LIBDIR)/libAlgorithmAlt_315634022.so
-
-# # ensure the output directory exists
-# $(LIBDIR):
-# 	mkdir -p $@
-
-# # first algorithm .so
-# $(LIBDIR)/libAlgorithm_315634022.so: $(ALGO1_OBJS)
-# 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
-
-# # second algorithm .so
-# $(LIBDIR)/libAlgorithmAlt_315634022.so: $(ALGO2_OBJS)
-# 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
-
-# # generic rule for all .cpp -> .o
-# %.o: %.cpp
-# 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# clean:
-# 	rm -rf *.o *.so $(LIBDIR)
-
-# .PHONY: all clean
-
-
-# Makefile for building the Algorithm plugin (libAlgorithm_315634022.so)
-
-# Root of the Simulator workspace (where common/ and Simulator/ live)
-PROJECT_ROOT ?= ..
-
-# Compiler and flags
 CXX       := g++
-CXXFLAGS  := -std=c++17 -fPIC -Wall -Wextra \
-              -I$(PROJECT_ROOT)/common \
-              -I$(PROJECT_ROOT)/UserCommon \
-              -Iinclude
+CXXFLAGS  := -fPIC -std=c++17 -I../common -I../UserCommon
 LDFLAGS   := -shared
+LIBS      := -L../Simulator -lsimreg
 
-# Your algorithm sources
-SOURCES   := TankAlgorithm_315634022.cpp \
-             Player_315634022.cpp
-OBJS      := $(SOURCES:.cpp=.o)
+# output directory for .so files
+LIBDIR    := sos
 
-# Simulator registration + registrar sources (compile-in to avoid -lsimreg)
-SIM_SRCS  := $(PROJECT_ROOT)/Simulator/PlayerRegistration.cpp \
-             $(PROJECT_ROOT)/Simulator/TankAlgorithmRegistration.cpp \
-             $(PROJECT_ROOT)/Simulator/AlgorithmRegistrar.cpp
+# object sets for each plugin
+ALGO1_OBJS := TankAlgorithm_315634022.o Player_315634022.o
+ALGO2_OBJS := TankAlgorithmAlt_315634022.o PlayerAlt_315634022.o
 
-# Output directory and target
-TARGET_DIR := sos
-TARGET      := $(TARGET_DIR)/libAlgorithm_315634022.so
+all: $(LIBDIR) \
+     $(LIBDIR)/libAlgorithm_315634022.so \
+     $(LIBDIR)/libAlgorithmAlt_315634022.so
 
-.PHONY: all clean
+# ensure the output directory exists
+$(LIBDIR):
+	mkdir -p $@
 
-all: $(TARGET)
+# first algorithm .so
+$(LIBDIR)/libAlgorithm_315634022.so: $(ALGO1_OBJS)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-# Ensure output directory exists
-$(TARGET_DIR):
-	mkdir -p $(TARGET_DIR)
+# second algorithm .so
+$(LIBDIR)/libAlgorithmAlt_315634022.so: $(ALGO2_OBJS)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-# Link everything into the shared object
-$(TARGET): $(OBJS) | $(TARGET_DIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(SIM_SRCS) -o $@
-
-# Compile each .cpp into .o
+# generic rule for all .cpp -> .o
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS)
-	rm -rf $(TARGET_DIR)
+	rm -rf *.o *.so $(LIBDIR)
+
+.PHONY: all clean
+
+
+# Makefile for building the Algorithm plugin (libAlgorithm_315634022.so)
+
+# # Root of the Simulator workspace (where common/ and Simulator/ live)
+# PROJECT_ROOT ?= ..
+
+# # Compiler and flags
+# CXX       := g++
+# CXXFLAGS  := -std=c++17 -fPIC -Wall -Wextra \
+#               -I$(PROJECT_ROOT)/common \
+#               -I$(PROJECT_ROOT)/UserCommon \
+#               -Iinclude
+# LDFLAGS   := -shared
+
+# # Your algorithm sources
+# SOURCES   := TankAlgorithm_315634022.cpp \
+#              Player_315634022.cpp
+# OBJS      := $(SOURCES:.cpp=.o)
+
+# # Simulator registration + registrar sources (compile-in to avoid -lsimreg)
+# SIM_SRCS  := $(PROJECT_ROOT)/Simulator/PlayerRegistration.cpp \
+#              $(PROJECT_ROOT)/Simulator/TankAlgorithmRegistration.cpp \
+#              $(PROJECT_ROOT)/Simulator/AlgorithmRegistrar.cpp
+
+# # Output directory and target
+# TARGET_DIR := sos
+# TARGET      := $(TARGET_DIR)/libAlgorithm_315634022.so
+
+# .PHONY: all clean
+
+# all: $(TARGET)
+
+# # Ensure output directory exists
+# $(TARGET_DIR):
+# 	mkdir -p $(TARGET_DIR)
+
+# # Link everything into the shared object
+# $(TARGET): $(OBJS) | $(TARGET_DIR)
+# 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(SIM_SRCS) -o $@
+
+# # Compile each .cpp into .o
+# %.o: %.cpp
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# clean:
+# 	rm -f $(OBJS)
+# 	rm -rf $(TARGET_DIR)
