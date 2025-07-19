@@ -93,47 +93,49 @@
 # .PHONY: all clean
 
 
+# Makefile for building the Algorithm plugin (libAlgorithm_315634022.so)
 
+# Root of the Simulator workspace (where common/ and Simulator/ live)
+PROJECT_ROOT ?= ..
 
-
+# Compiler and flags
 CXX       := g++
-CXXFLAGS  := -fPIC -std=c++17 -I../common -I../UserCommon -I.
+CXXFLAGS  := -std=c++17 -fPIC -Wall -Wextra \
+              -I$(PROJECT_ROOT)/common \
+              -I$(PROJECT_ROOT)/UserCommon \
+              -Iinclude
 LDFLAGS   := -shared
-LIBS      := -L../Simulator -lsimreg
 
-# output directory for .so files
-LIBDIR    := sos
+# Your algorithm sources
+SOURCES   := TankAlgorithm_315634022.cpp \
+             Player_315634022.cpp
+OBJS      := $(SOURCES:.cpp=.o)
 
-# sources for each plugin
-ALGO1_SRC := TankAlgorithm_315634022.cpp EvasiveTank.cpp Player_315634022.cpp
-ALGO2_SRC := TankAlgorithmAlt_315634022.cpp PlayerAlt_315634022.cpp
+# Simulator registration + registrar sources (compile-in to avoid -lsimreg)
+SIM_SRCS  := $(PROJECT_ROOT)/Simulator/PlayerRegistration.cpp \
+             $(PROJECT_ROOT)/Simulator/TankAlgorithmRegistration.cpp \
+             $(PROJECT_ROOT)/Simulator/AlgorithmRegistrar.cpp
 
-# object sets for each plugin
-ALGO1_OBJS := $(ALGO1_SRC:.cpp=.o)
-ALGO2_OBJS := $(ALGO2_SRC:.cpp=.o)
+# Output directory and target
+TARGET_DIR := sos
+TARGET      := $(TARGET_DIR)/libAlgorithm_315634022.so
 
-all: $(LIBDIR) \
-     $(LIBDIR)/libAlgorithm_315634022.so \
-     $(LIBDIR)/libAlgorithmAlt_315634022.so
+.PHONY: all clean
 
-# ensure the output directory exists
-$(LIBDIR):
-	mkdir -p $@
+all: $(TARGET)
 
-# first algorithm .so
-$(LIBDIR)/libAlgorithm_315634022.so: $(ALGO1_OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+# Ensure output directory exists
+$(TARGET_DIR):
+	mkdir -p $(TARGET_DIR)
 
-# second algorithm .so
-$(LIBDIR)/libAlgorithmAlt_315634022.so: $(ALGO2_OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+# Link everything into the shared object
+$(TARGET): $(OBJS) | $(TARGET_DIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(SIM_SRCS) -o $@
 
-# generic rule for all .cpp -> .o
+# Compile each .cpp into .o
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(ALGO1_OBJS) $(ALGO2_OBJS)
-	rm -rf $(LIBDIR)
-
-.PHONY: all clean
+	rm -f $(OBJS)
+	rm -rf $(TARGET_DIR)
