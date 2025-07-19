@@ -5,44 +5,214 @@ PROJECT_ROOT ?= ..
 
 # Compiler and flags
 CXX      := g++
-CXXFLAGS := -std=c++17 -fPIC -Wall -Wextra \
+CXXFLAGS := -std=c++17 -fPIC -Wall -Wextra -g \
             -I$(PROJECT_ROOT)/common \
             -Iinclude/GameManager_315634022
 
-# Linker flags: shared lib, defer undefined symbols to simulator
-LDFLAGS  := -shared -undefined dynamic_lookup
+# Platform detection for linker flags
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    # macOS: defer undefined symbols to runtime
+    LDFLAGS := -shared -undefined dynamic_lookup
+else
+    # Linux: standard shared library
+    LDFLAGS := -shared -fPIC
+endif
+
+# Build configuration
+DEBUG ?= 1
+ifeq ($(DEBUG),0)
+    CXXFLAGS := $(subst -g,-O2 -DNDEBUG,$(CXXFLAGS))
+endif
 
 # Directories
 SRC_DIR     := src
 BUILD_DIR   := build
 TARGET_DIR  := sos
+INCLUDE_DIR := include/GameManager_315634022
 
-# Plugin name
+# Plugin name and target
 PLUGIN_NAME := GameManager_315634022.so
 TARGET      := $(TARGET_DIR)/$(PLUGIN_NAME)
 
-# Source and object files
+# Source and object files with dependency tracking
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
+DEPS := $(OBJS:.o=.d)
 
-.PHONY: all clean
+# Header dependencies
+HEADERS := $(wildcard $(INCLUDE_DIR)/*.h) $(wildcard $(INCLUDE_DIR)/*.hpp)
+COMMON_HEADERS := $(wildcard $(PROJECT_ROOT)/common/*.h) $(wildcard $(PROJECT_ROOT)/common/*.hpp)
 
+# Verbose mode
+V ?= 0
+ifeq ($(V),0)
+    Q := @
+    ECHO := @echo
+else
+    Q :=
+    ECHO := @true
+endif
+
+# Default target
 all: $(TARGET)
+
+# Build configuration targets
+debug: DEBUG=1
+debug: $(TARGET)
+
+release: DEBUG=0
+release: $(TARGET)
 
 # Ensure build and target dirs exist
 $(BUILD_DIR) $(TARGET_DIR):
-	@mkdir -p $@
+	$(Q)mkdir -p $@
 
-# Compile .cpp -> .o in build dir
+# Compile .cpp -> .o in build dir with dependency generation
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(ECHO) "  CXX     $<"
+	$(Q)$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
+
+# Include dependency files
+-include $(DEPS)
 
 # Link plugin
 $(TARGET): $(OBJS) | $(TARGET_DIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
+	$(ECHO) "  LINK    $@"
+	$(Q)$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
+	$(ECHO) "Plugin built successfully: $@"
 
+# Development utilities
+check-vars:
+	@echo "PROJECT_ROOT: $(PROJECT_ROOT)"
+	@echo "CXX:          $(CXX)"
+	@echo "CXXFLAGS:     $(CXXFLAGS)"
+	@echo "LDFLAGS:      $(LDFLAGS)"
+	@echo "SRCS:         $(SRCS)"
+	@echo "OBJS:         $(OBJS)"
+	@echo "TARGET:       $(TARGET)"
+	@echo "Platform:     $(UNAME_S)"
+
+# List source files
+list-sources:
+	@echo "Source files found:"
+	@for src in $(SRCS); do echo "  $$src"; done
+	@echo "Header files found:"
+	@for hdr in $(HEADERS); do echo "  $$hdr"; done
+
+# Check if plugin loads correctly (requires simulator)
+test-load: $(TARGET)
+	@echo "Testing plugin load (requires simulator in PATH)..."
+	@if command -v ldd >/dev/null 2>&1; then \
+		echo "Library dependencies:"; \
+		ldd $(TARGET) 2>/dev/null || echo "  (No dependencies or ldd unavailable)"; \
+	elif command -v otool >/dev/null 2>&1; then \
+		echo "Library dependencies:"; \
+		otool -L $(TARGET) 2>/dev/null || echo "  (No dependencies or otool unavailable)"; \
+	fi
+	@echo "Plugin file info:"
+	@file $(TARGET)
+
+# Install plugin to a specific directory
+install: $(TARGET)
+	@if [ -z "$(INSTALL_DIR)" ]; then \
+		echo "Usage: make install INSTALL_DIR=/path/to/plugins"; \
+		echo "Or set INSTALL_DIR environment variable"; \
+		exit 1; \
+	fi
+	@mkdir -p $(INSTALL_DIR)
+	@cp $(TARGET) $(INSTALL_DIR)/
+	@echo "Plugin installed to $(INSTALL_DIR)/$(PLUGIN_NAME)"
+
+# Help target
+help:
+	@echo "GameManager Plugin Build System"
+	@echo "==============================="
+	@echo ""
+	@echo "Targets:"
+	@echo "  all           - Build plugin (default)"
+	@echo "  debug         - Build with debug symbols (default)"
+	@echo "  release       - Build optimized version"
+	@echo "  clean         - Remove build artifacts"
+	@echo "  test-load     - Test plugin dependencies and info"
+	@echo "  check-vars    - Display build variables"
+	@echo "  list-sources  - List discovered source/header files"
+	@echo "  install       - Install plugin (requires INSTALL_DIR)"
+	@echo "  help          - Show this help"
+	@echo ""
+	@echo "Variables:"
+	@echo "  PROJECT_ROOT  - Path to simulator root (default: ..)"
+	@echo "  DEBUG         - Enable debug build (0/1, default: 1)"
+	@echo "  V             - Verbose output (0/1, default: 0)"
+	@echo "  INSTALL_DIR   - Installation directory for install target"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make release              # Build optimized version"
+	@echo "  make V=1                  # Build with verbose output"
+	@echo "  make clean all            # Clean rebuild"
+	@echo "  make install INSTALL_DIR=../plugins"
+
+# Rebuild everything
+rebuild: clean all
+
+# Clean target
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET_DIR)
+	$(ECHO) "  CLEAN   $(BUILD_DIR) $(TARGET_DIR)"
+	$(Q)rm -rf $(BUILD_DIR) $(TARGET_DIR)
+
+# Phony targets
+.PHONY: all debug release clean rebuild check-vars list-sources test-load install help
+# # Makefile for building the GameManager plugin (GameManager_315634022.so)
+
+# # Allow overriding the simulator workspace root
+# PROJECT_ROOT ?= ..
+
+# # Compiler and flags
+# CXX      := g++
+# CXXFLAGS := -std=c++17 -fPIC -Wall -Wextra \
+#             -I$(PROJECT_ROOT)/common \
+#             -Iinclude/GameManager_315634022
+
+# # Linker flags: shared lib, defer undefined symbols to simulator
+# LDFLAGS  := -shared -undefined dynamic_lookup
+
+# # Directories
+# SRC_DIR     := src
+# BUILD_DIR   := build
+# TARGET_DIR  := sos
+
+# # Plugin name
+# PLUGIN_NAME := GameManager_315634022.so
+# TARGET      := $(TARGET_DIR)/$(PLUGIN_NAME)
+
+# # Source and object files
+# SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+# OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
+
+# .PHONY: all clean
+
+# all: $(TARGET)
+
+# # Ensure build and target dirs exist
+# $(BUILD_DIR) $(TARGET_DIR):
+# 	@mkdir -p $@
+
+# # Compile .cpp -> .o in build dir
+# $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# # Link plugin
+# $(TARGET): $(OBJS) | $(TARGET_DIR)
+# 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
+
+# clean:
+# 	rm -rf $(BUILD_DIR) $(TARGET_DIR)
+
+
+
+
+
+
 
 
 # # Makefile for building the GameManager plugin (GameManager_315634022.so)
