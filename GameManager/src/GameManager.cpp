@@ -138,8 +138,8 @@ GameResult GameManager::run(
 
     return gm;
 }
-
+using ::GameManager_315634022::GameManager;
+// Register for dynamic loading
+REGISTER_GAME_MANAGER(GameManager)
 } // namespace GameManager_315634022
 
-// Register for dynamic loading
-REGISTER_GAME_MANAGER(GameManager_315634022::GameManager)

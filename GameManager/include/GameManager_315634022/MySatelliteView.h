@@ -1,4 +1,4 @@
-// include/MySatelliteView.h
+// include/GameManager_315634022/MySatelliteView.h
 #pragma once
 
 #include "SatelliteView.h"

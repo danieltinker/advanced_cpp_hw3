@@ -129,14 +129,15 @@ std::string GameState::advanceOneTurn() {
             // mark the querying tank’s position specially
             grid[ts.y][ts.x] = '%';
 
-            // construct the view and dispatch to the right player
-            MySatelliteView view(grid, int(rows_), int(cols_), ts.x, ts.y);
-            // auto view = createSatelliteViewFor(ts.x, ts.y);
+            MySatelliteView view(grid, rows_, cols_, ts.x, ts.y);
             if (ts.player_index == 1) {
-                p1_.updateTankWithBattleInfo(alg, *view);
+                p1_.updateTankWithBattleInfo(alg, view);
             } else {
-                p2_.updateTankWithBattleInfo(alg, *view);
+                p2_.updateTankWithBattleInfo(alg, view);
             }
+
+
+
 
             actions[k] = ActionRequest::GetBattleInfo;
         }
@@ -286,11 +287,6 @@ for (size_t k = 0; k < N; ++k) {
 }
 
 std::size_t GameState::getCurrentTurn() const { return currentStep_; }
-
-
-//------------------------------------------------------------------------------
-bool GameState::isGameOver() const { return gameOver_; }
-std::string GameState::getResultString() const { return resultStr_; }
 
 //------------------------------------------------------------------------------
 void GameState::printBoard() const {
@@ -814,9 +810,9 @@ void GameState::checkGameEndConditions() {
     else if (a2==0) {
         gameOver_=true; resultStr_="Player 1 won with "+std::to_string(a1)+" tanks still alive";
     }
-    else if (currentStep_+1>=maxSteps_) {
-        gameOver_=true;
-        resultStr_="Tie, reached max steps="+std::to_string(maxSteps_)+
+    else if (currentStep_ + 1 >= max_steps_) {
+    gameOver_ = true;
+    resultStr_ = "Tie, reached max steps=" + std::to_string(max_steps_)+
                    ", player1 has "+std::to_string(a1)+
                    ", player2 has "+std::to_string(a2);
     }

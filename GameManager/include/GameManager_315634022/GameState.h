@@ -15,7 +15,7 @@
 // #include <TankAlgorithmFactory.h>
 #include <ActionRequest.h>
 #include <GameResult.h>
-
+#include "MySatelliteView.h"
 #include "TankAlgorithm.h"
 
 namespace GameManager_315634022 {
@@ -85,8 +85,22 @@ private:
     bool                     gameOver_;
     std::string              resultStr_;
 
+    // Board dimensions & tank indexing
+    std::size_t              rows_, cols_;
+    int                      nextTankIndex_[3];
+
     // Tanks
-    struct TankState { /* ... unchanged ... */ };
+    struct TankState {
+        int           player_index;
+        int           tank_index;
+        int           x, y;
+        int           direction;
+        bool          alive;
+        std::size_t   shells_left;
+        int           shootCooldown;
+        int           backwardDelayCounter;
+        bool          lastActionBackwardExecuted;
+    };
     std::vector<TankState>   all_tanks_;
     std::vector<std::vector<std::size_t>> tankIdMap_;
 
