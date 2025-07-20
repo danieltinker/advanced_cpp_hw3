@@ -34,3 +34,11 @@ Usage: simulator_<ID> <-comparative|-competition>
   algorithm2=../Algorithm/sos/libAlgorithmAlt_315634022.so \
   num_threads=4 \
   --verbose
+
+
+  ./simulator_315634022 --competition \
+  game_maps_folder=../maps \
+  game_manager=../GameManager/sos/GameManager_315634022.so \
+  algorithms_folder=../Algorithm/sos \
+  num_threads=4 \
+  --verbose
