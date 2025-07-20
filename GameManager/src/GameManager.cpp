@@ -42,7 +42,8 @@ GameResult GameManager::run(
     }
 
     // 1) Build the board from SatelliteView
-    Board board(map_width, map_height,verbose_);
+    // Board board(map_width, map_height,verbose_);
+    Board board(map_height, map_width, verbose_);
     board.loadFromSatelliteView(satView);
 
     // 2) Construct the GameState (injection‐style ctor)
