@@ -307,16 +307,19 @@ static int runCompetition(const Config& cfg) {
         return 1;
     }
 
-    // 2) Load GM
+    // 2) Load GM (CRITICAL - must succeed)
     auto& gmReg = GameManagerRegistrar::get();
     std::string gmName = stripSo(cfg.game_manager);
     gmReg.createGameManagerEntry(gmName);
     void* gmH = dlopen(cfg.game_manager.c_str(), RTLD_NOW);
     if (!gmH) {
         std::cerr << "Error: dlopen GM failed: " << dlerror() << "\n";
+        gmReg.removeLast();
         return 1;
     }
-    try { gmReg.validateLastRegistration(); }
+    try { 
+        gmReg.validateLastRegistration(); 
+    }
     catch (...) {
         std::cerr << "Error: GM registration failed for '" << gmName << "'\n";
         gmReg.removeLast();
@@ -324,10 +327,11 @@ static int runCompetition(const Config& cfg) {
         return 1;
     }
 
-    // 3) Load Algos
+    // 3) Load Algorithms (resilient loading)
     auto& algoReg = AlgorithmRegistrar::get();
-    std::vector<void*>    algoHandles;
-    std::vector<std::string> algoPaths;
+    std::vector<void*> algoHandles;
+    std::vector<std::string> algoPaths; // Track only successfully loaded algorithms
+    
     for (auto& e : fs::directory_iterator(cfg.algorithms_folder)) {
         if (e.path().extension() == ".so") {
             std::string path = e.path().string();
@@ -336,22 +340,29 @@ static int runCompetition(const Config& cfg) {
             if (!h) {
                 std::cerr << "Warning: dlopen Algo '" << path << "' failed\n";
                 algoReg.removeLast();
-                continue;
+                continue; // Skip this algorithm and continue with the next one
             }
-            try { algoReg.validateLastRegistration(); }
+            try { 
+                algoReg.validateLastRegistration(); 
+            }
             catch (...) {
                 std::cerr << "Warning: Algo registration failed for '" << path << "'\n";
                 algoReg.removeLast();
                 dlclose(h);
-                continue;
+                continue; // Skip this algorithm and continue with the next one
             }
             algoHandles.push_back(h);
             algoPaths.push_back(path);
         }
     }
+    
+    // Check if we have minimum required algorithms
     if (algoPaths.size() < 2) {
         std::cerr << "Error: need at least 2 algorithms in folder\n";
         dlclose(gmH);
+        for (auto h : algoHandles) {
+            dlclose(h);
+        }
         return 1;
     }
 
