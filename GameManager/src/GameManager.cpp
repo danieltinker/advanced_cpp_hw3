@@ -9,8 +9,14 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 
 namespace GameManager_315634022 {
+
+// your plugin’s logical name
+static constexpr char const* kGMName = "GameManager_315634022";
 
 GameManager::GameManager(bool verbose)
   : verbose_(verbose)
@@ -26,27 +32,43 @@ GameResult GameManager::run(
     TankAlgorithmFactory factory1,
     TankAlgorithmFactory factory2
 ) {
-    // 0) Derive output filename
-    std::string name = map_name;
-    auto slash = name.find_last_of("/\\");
-    if (slash != std::string::npos) name = name.substr(slash + 1);
-    auto dot = name.rfind('.');
-    if (dot != std::string::npos) name = name.substr(0, dot);
-    std::string outFile = "output_" + name + ".txt";
+    // 0) Prepare actions‑log file only if verbose_
+    std::string outFile;
+    std::ofstream ofs;
+    if (verbose_) {
+        // strip path & extension from map_name
+        std::string name = map_name;
+        auto slash = name.find_last_of("/\\");
+        if (slash != std::string::npos) name = name.substr(slash + 1);
+        auto dot = name.rfind('.');
+        if (dot != std::string::npos)    name = name.substr(0, dot);
 
-    std::ofstream ofs(outFile);
-    if (!ofs) {
-        std::cerr << "Error: cannot open actions log file '"
-                  << outFile << "' for writing.\n";
-        std::exit(1);
+        // build timestamp "YYYYMMDD_HHMMSS"
+        auto now = std::chrono::system_clock::now();
+        auto tt  = std::chrono::system_clock::to_time_t(now);
+        std::tm tm{};
+        localtime_r(&tt, &tm);
+        std::ostringstream ts_ss;
+        ts_ss << std::put_time(&tm, "%Y%m%d_%H%M%S");
+        std::string ts = ts_ss.str();
+
+        // filename: <GMName>_output_<Map>_<Algo1>_vs_<Algo2>_<Timestamp>.txt
+        outFile = std::string(kGMName) + "_output_"
+                + name + "_" + name1 + "_vs_" + name2 + "_" + ts + ".txt";
+
+        ofs.open(outFile);
+        if (!ofs) {
+            std::cerr << "Error: cannot open actions log file '"
+                      << outFile << "' for writing.\n";
+            std::exit(1);
+        }
     }
 
     // 1) Build the board from SatelliteView
-    // Board board(map_width, map_height,verbose_);
     Board board(map_height, map_width, verbose_);
     board.loadFromSatelliteView(satView);
 
-    // 2) Construct the GameState (injection‐style ctor)
+    // 2) Construct the GameState (injection‑style ctor)
     GameState state(
         std::move(board),
         std::move(map_name),
@@ -59,30 +81,26 @@ GameResult GameManager::run(
         verbose_
     );
 
-    // 3) Print initial board
-    // std::cout << "=== Start Position ===\n";
-    // state.printBoard();
-
-    // 4) Game loop
+    // 3) Game loop
     std::size_t turn = 1;
     while (!state.isGameOver()) {
-        // std::cout << "=== Turn " << turn << " ===\n";
         std::string actions = state.advanceOneTurn();
-        // state.printBoard();
-        ofs << actions << "\n";
+        if (verbose_) {
+            ofs << actions << "\n";
+        }
         ++turn;
     }
 
-    // 5) Final board + result
-    // std::cout << "=== Final Board ===\n";
-    // state.printBoard();
+    // 4) Final board + result
     std::string resultStr = state.getResultString();
     std::cout << resultStr << "\n";
-    ofs << resultStr << "\n";
-    ofs.close();
-    std::cout << "Actions logged to: " << outFile << "\n";
+    if (verbose_) {
+        ofs << resultStr << "\n";
+        ofs.close();
+        std::cout << "Actions logged to: " << outFile << "\n";
+    }
 
-    // 6) Assemble GameResult
+    // 5) Assemble GameResult
     GameResult gm;
     gm.rounds = turn - 1;
 
@@ -110,7 +128,7 @@ GameResult GameManager::run(
         gm.remaining_tanks = {0, 0};
     }
     else {
-        // max‐steps tie
+        // max‑steps tie
         gm.winner = 0;
         gm.reason = GameResult::MAX_STEPS;
         auto p1pos = resultStr.find("player1 has ") + 12;
@@ -121,7 +139,7 @@ GameResult GameManager::run(
         gm.remaining_tanks = {a1, a2};
     }
 
-    // 7) Capture final board via SatelliteView subclass
+    // 6) Capture final board via SatelliteView subclass
     struct FinalBoardView : public SatelliteView {
         FinalBoardView(const Board& b) : board_(b) {}
         char getObjectAt(size_t x, size_t y) const override {
@@ -140,8 +158,9 @@ GameResult GameManager::run(
 
     return gm;
 }
+
+} // namespace GameManager_315634022
+
 using ::GameManager_315634022::GameManager;
 // Register for dynamic loading
 REGISTER_GAME_MANAGER(GameManager)
-} // namespace GameManager_315634022
-
