@@ -18,13 +18,14 @@ endif
 
 # Build configuration
 BUILD_DIR       := build
+OUTPUT_DIR      := .
 DEBUG           ?= 1
 ifeq ($(DEBUG),0)
     CXXFLAGS    := $(subst -g -O0,-O2 -DNDEBUG,$(CXXFLAGS))
 endif
 
 # Linking flags
-LDLIBS_TEST     := -L$(BUILD_DIR) -lsimreg -ldl
+LDLIBS_TEST     := -L$(OUTPUT_DIR) -lsimreg -ldl
 
 # Source files organized by component
 REG_SRCS        := AlgorithmRegistrar.cpp \
@@ -47,17 +48,17 @@ MAIN_OBJS       := $(MAIN_SRCS:%.cpp=$(BUILD_DIR)/%.o)
 
 ALL_OBJS        := $(REG_OBJS) $(TP_OBJS) $(AP_OBJS) $(TEST_OBJS) $(MAIN_OBJS)
 
-# Target names
-LIB             := $(BUILD_DIR)/libsimreg.so
-TEST_TARGET     := $(BUILD_DIR)/test_dynamic_load
-SIM_TARGET      := $(BUILD_DIR)/simulator_315634022
+# Target names - executables go to current directory
+LIB             := $(OUTPUT_DIR)/libsimreg.so
+TEST_TARGET     := $(OUTPUT_DIR)/test_dynamic_load
+SIM_TARGET      := $(OUTPUT_DIR)/simulator_315634022
 
 # Default target
 all: $(LIB) $(TEST_TARGET) $(SIM_TARGET)
 
-# Create build directory
-$(BUILD_DIR):
-	@mkdir -p $(BUILD_DIR)
+# Create directories
+$(BUILD_DIR) $(OUTPUT_DIR):
+	@mkdir -p $@
 
 # Generic rule for .cpp → .o with dependency generation
 $(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)
@@ -67,15 +68,15 @@ $(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)
 -include $(ALL_OBJS:.o=.d)
 
 # Build the registrar library
-$(LIB): $(REG_OBJS) | $(BUILD_DIR)
+$(LIB): $(REG_OBJS) | $(OUTPUT_DIR)
 	$(CXX) $(LDFLAGS_SO) -o $@ $^
 
 # Build test driver
-$(TEST_TARGET): $(TEST_OBJS) $(LIB) | $(BUILD_DIR)
+$(TEST_TARGET): $(TEST_OBJS) $(LIB) | $(OUTPUT_DIR)
 	$(CXX) -o $@ $(TEST_OBJS) $(LDLIBS_TEST) $(RPATH)
 
 # Build simulator
-$(SIM_TARGET): $(MAIN_OBJS) $(AP_OBJS) $(TP_OBJS) $(LIB) | $(BUILD_DIR)
+$(SIM_TARGET): $(MAIN_OBJS) $(AP_OBJS) $(TP_OBJS) $(LIB) | $(OUTPUT_DIR)
 	$(CXX) $(EXPORT_SYMS) -o $@ $(MAIN_OBJS) $(AP_OBJS) $(TP_OBJS) $(LDLIBS_TEST) $(RPATH)
 
 # Development targets
@@ -101,6 +102,7 @@ help:
 # Clean target
 clean:
 	rm -rf $(BUILD_DIR)
+	rm -f $(LIB) $(TEST_TARGET) $(SIM_TARGET)
 
 # Verbose mode
 V ?= 0
@@ -122,7 +124,6 @@ endif
 
 # Phony targets
 .PHONY: all debug release clean help install
-
 
 
 # CXX             := g++

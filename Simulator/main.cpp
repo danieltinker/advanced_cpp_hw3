@@ -191,35 +191,41 @@ static int runComparative(const Config& cfg) {
     }
 
     std::vector<void*> gmHandles;
+std::vector<std::string> validGmPaths; // Track only successfully loaded GMs
+if (cfg.verbose) {
+    std::cout << "[DEBUG] About to load GameManager plugins from '" << cfg.game_managers_folder << "'\n";
+}
+for (auto const& gmPath : gmPaths) {
     if (cfg.verbose) {
-        std::cout << "[DEBUG] About to load GameManager plugins from '" << cfg.game_managers_folder << "'\n";
+        std::cout << "[DEBUG]  Loading GM: " << gmPath << "\n";
     }
-    for (auto const& gmPath : gmPaths) {
-        if (cfg.verbose) {
-            std::cout << "[DEBUG]  Loading GM: " << gmPath << "\n";
-        }
-        std::string name = stripSo(gmPath);
-        gmReg.createGameManagerEntry(name);
-        void* h = dlopen(gmPath.c_str(), RTLD_NOW);
-        if (!h) {
-            std::cerr << "Error: dlopen GM '" << name << "' failed: " << dlerror() << "\n";
-            return 1;
-        }
-        if (cfg.verbose) {
-            std::cout << "[DEBUG]   dlopened GM " << name << " @ " << h << "\n";
-        }
-        try { gmReg.validateLastRegistration(); }
-        catch (...) {
-            std::cerr << "Error: GM registration failed for '" << name << "'\n";
-            gmReg.removeLast();
-            dlclose(h);
-            return 1;
-        }
-        if (cfg.verbose) {
-            std::cout << "[DEBUG]   validated GM registration for " << name << "\n";
-        }
-        gmHandles.push_back(h);
+    std::string name = stripSo(gmPath);
+    gmReg.createGameManagerEntry(name);
+    void* h = dlopen(gmPath.c_str(), RTLD_NOW);
+    if (!h) {
+        std::cerr << "Warning: dlopen GM '" << name << "' failed: " << dlerror() << "\n";
+        gmReg.removeLast(); // Clean up the registry entry
+        continue; // Skip this GM and continue with the next one
     }
+    if (cfg.verbose) {
+        std::cout << "[DEBUG]   dlopened GM " << name << " @ " << h << "\n";
+    }
+    try { 
+        gmReg.validateLastRegistration(); 
+    }
+    catch (...) {
+        std::cerr << "Warning: GM registration failed for '" << name << "'\n";
+        gmReg.removeLast();
+        dlclose(h);
+        continue; // Skip this GM and continue with the next one
+    }
+    if (cfg.verbose) {
+        std::cout << "[DEBUG]   validated GM registration for " << name << "\n";
+    }
+    gmHandles.push_back(h);
+    validGmPaths.push_back(gmPath); // Only add successfully loaded GMs
+}
+
 
     // 4) Dispatch tasks
     ThreadPool pool(cfg.numThreads);
@@ -232,38 +238,44 @@ static int runComparative(const Config& cfg) {
     };
     std::vector<Entry> results;
 
-    for (size_t gi = 0; gi < gmPaths.size(); ++gi) {
-        auto& gmEntry = *(gmReg.begin() + gi);
-        auto& A = *(algoReg.begin() + 0);
-        auto& B = *(algoReg.begin() + 1);
+    if (validGmPaths.empty()) {
+    std::cerr << "Error: no valid GameManager plugins could be loaded\n";
+    return 1;
+}
 
-        pool.enqueue([&, gi] {
-            auto gm = gmEntry.factory(cfg.verbose);
-            auto p1 = A.createPlayer(0, 0, 0, md.maxSteps, md.numShells);
-            auto a1 = A.createTankAlgorithm(0, 0);
-            auto p2 = B.createPlayer(1, 0, 0, md.maxSteps, md.numShells);
-            auto a2 = B.createTankAlgorithm(1, 0);
+// Update the task dispatching loop to use validGmPaths instead of gmPaths
+for (size_t gi = 0; gi < validGmPaths.size(); ++gi) {
+    auto& gmEntry = *(gmReg.begin() + gi);
+    auto& A = *(algoReg.begin() + 0);
+    auto& B = *(algoReg.begin() + 1);
 
-            GameResult gr = gm->run(
-                md.cols, md.rows,
-                realMap,
-                cfg.game_map,
-                md.maxSteps, md.numShells,
-                *p1, stripSo(cfg.algorithm1),
-                *p2, stripSo(cfg.algorithm2),
-                [&](int pi,int ti){ return A.createTankAlgorithm(pi,ti); },
-                [&](int pi,int ti){ return B.createTankAlgorithm(pi,ti); }
-            );
+    pool.enqueue([&, gi] {
+        auto gm = gmEntry.factory(cfg.verbose);
+        auto p1 = A.createPlayer(0, 0, 0, md.maxSteps, md.numShells);
+        auto a1 = A.createTankAlgorithm(0, 0);
+        auto p2 = B.createPlayer(1, 0, 0, md.maxSteps, md.numShells);
+        auto a2 = B.createTankAlgorithm(1, 0);
 
-            std::lock_guard<std::mutex> lock(mtx);
-            results.emplace_back(
-                stripSo(gmPaths[gi]),
-                stripSo(cfg.algorithm1),
-                stripSo(cfg.algorithm2),
-                std::move(gr)
-            );
-        });
-    }
+        GameResult gr = gm->run(
+            md.cols, md.rows,
+            realMap,
+            cfg.game_map,
+            md.maxSteps, md.numShells,
+            *p1, stripSo(cfg.algorithm1),
+            *p2, stripSo(cfg.algorithm2),
+            [&](int pi,int ti){ return A.createTankAlgorithm(pi,ti); },
+            [&](int pi,int ti){ return B.createTankAlgorithm(pi,ti); }
+        );
+
+        std::lock_guard<std::mutex> lock(mtx);
+        results.emplace_back(
+            stripSo(validGmPaths[gi]), // Use validGmPaths instead of gmPaths
+            stripSo(cfg.algorithm1),
+            stripSo(cfg.algorithm2),
+            std::move(gr)
+        );
+    });
+}
     pool.shutdown();
 
     // 5) Report & cleanup
@@ -441,6 +453,7 @@ static int runCompetition(const Config& cfg) {
 // -----------------------------
 int main(int argc, char* argv[]) {
     Config cfg;
+    std::cout << "HELLLLLLLOOOOOOOOOO" << std::endl;
     if (!parseArguments(argc, argv, cfg)) {
         return 1;
     }
