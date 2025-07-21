@@ -76,17 +76,16 @@ GameState::GameState(
 
     if (verbose_) {
 
-    size_t count1 = 0, count2 = 0;
-    for (auto& ts : all_tanks_) {
-        if (ts.player_index == 1) ++count1;
-        else if (ts.player_index == 2) ++count2;
-    }
-    std::cout << "[DEBUG] Spawned tanks — player1=" << count1 
-            << ", player2=" << count2 << "\n";
-    for (auto& ts : all_tanks_) {
-        std::cout << "[DEBUG]  Tank(" << ts.player_index << "," << ts.tank_index
-                << ") at (" << ts.x << "," << ts.y << ")\n";
-    }
+    // size_t count1 = 0, count2 = 0;
+    // for (auto& ts : all_tanks_) {
+    //     if (ts.player_index == 1) ++count1;
+    //     else if (ts.player_index == 2) ++count2;
+    // }
+    // std::cout << "[DEBUG] Spawned tanks — player1=" << count1 
+    //         << ", player2=" << count2 << "\n";
+    // for (auto& ts : all_tanks_) {
+    //     std::cout << "[DEBUG]  Tank(" << ts.player_index << "," << ts.tank_index<< ") at (" << ts.x << "," << ts.y << ")\n";
+    // }
     }
 
     // Shells & end‐state
@@ -124,12 +123,11 @@ std::string GameState::advanceOneTurn() {
     std::vector<ActionRequest> actions(N, ActionRequest::DoNothing);
     std::vector<bool> ignored(N,false), killed(N,false);
 
-    if (verbose_) {
-
-    std::cout << "[DEBUG] advanceOneTurn called — step=" << currentStep_ + 1
-          << ", board=" << cols_ << "x" << rows_
-          << ", num_shells=" << num_shells_ << "\n";
-    }      
+    // if (verbose_) {
+    // std::cout << "[DEBUG] advanceOneTurn called — step=" << currentStep_ + 1
+        //   << ", board=" << cols_ << "x" << rows_
+        //   << ", num_shells=" << num_shells_ << "\n";
+    // }      
      // 1) Gather raw requests
     for (size_t k = 0; k < N; ++k) {
         auto& ts  = all_tanks_[k];
@@ -261,18 +259,18 @@ for (size_t k = 0; k < N; ++k) {
 
 
     // ─── Console print of each tank's decision and status ────────────────────────
-    std::cout << "=== Decisions ===\n"<<std::endl;
-    for (size_t k = 0; k < N; ++k) {
-        const char* actName = actionToString(logActions[k]);
-        bool wasIgnored     = ignored[k]
-        && logActions[k] != ActionRequest::GetBattleInfo;
-        std::cout << "  Tank[" << k << "]: "
-        << actName
-        << (wasIgnored ? " (ignored)" : " (accepted)")
-        << "\n";
-    }
-    std::cout << std::endl;
-    std::cout << "=== Board State: ===\n" << std::endl;
+    // std::cout << "=== Decisions ===\n"<<std::endl;
+    // for (size_t k = 0; k < N; ++k) {
+    //     const char* actName = actionToString(logActions[k]);
+    //     bool wasIgnored     = ignored[k]
+    //     && logActions[k] != ActionRequest::GetBattleInfo;
+    //     std::cout << "  Tank[" << k << "]: "
+    //     << actName
+    //     << (wasIgnored ? " (ignored)" : " (accepted)")
+    //     << "\n";
+    // }
+    // std::cout << std::endl;
+    // std::cout << "=== Board State: ===\n" << std::endl;
     
     // ─── Logging: use the ORIGINAL requests ────────────────────────────────────
     std::ostringstream oss;

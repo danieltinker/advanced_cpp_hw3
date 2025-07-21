@@ -29,7 +29,7 @@ struct MapData {
     size_t maxSteps, numShells;
 };
 
-static MapData loadMapWithParams(const std::string& path, bool verbose) {
+static MapData loadMapWithParams(const std::string& path, bool debug) {
     std::ifstream in(path);
     if (!in.is_open()) {
         throw std::runtime_error("Failed to open map file: " + path);
@@ -62,7 +62,7 @@ static MapData loadMapWithParams(const std::string& path, bool verbose) {
         }
     }
     // DEBUG: dump header
-    if (verbose) {
+    if (debug) {
 
     std::cout << "[DEBUG] Parsed Map — rows=" << rows 
               << ", cols=" << cols 
@@ -76,7 +76,7 @@ static MapData loadMapWithParams(const std::string& path, bool verbose) {
                   << " grid lines, but expected " << rows << "\n";
     }
     // only iterate over what's actually present
-    if (verbose) {
+    if (debug) {
 
     for (size_t r = 0; r < actualLines && r < rows; ++r) {
         std::cout << "[DEBUG] row " << r << ": " << gridLines[r] << "\n";
@@ -139,7 +139,7 @@ static int runComparative(const Config& cfg) {
     // 1) Load map + params
     MapData md;
     try {
-        md = loadMapWithParams(cfg.game_map, cfg.verbose);
+        md = loadMapWithParams(cfg.game_map, cfg.debug);
     } catch (const std::exception& ex) {
         std::cerr << "Error loading map: " << ex.what() << "\n";
         return 1;
@@ -149,17 +149,17 @@ static int runComparative(const Config& cfg) {
     // 2) Load Algorithms
     auto& algoReg = AlgorithmRegistrar::get();
     std::vector<void*> algoHandles;
-    if (cfg.verbose) {
+    if (cfg.debug) {
         std::cout << "[DEBUG] About to load " << 2 << " algorithm plugins\n";
     }
     for (auto const& algPath : {cfg.algorithm1, cfg.algorithm2}) {
-        if (cfg.verbose) {
+        if (cfg.debug) {
             std::cout << "[DEBUG]  Loading algorithm: " << algPath << "\n";
         }
         std::string name = stripSo(algPath);
         algoReg.createAlgorithmFactoryEntry(name);
         void* h = dlopen(algPath.c_str(), RTLD_NOW);
-        if (cfg.verbose) {
+        if (cfg.debug) {
             std::cout << "[DEBUG]   dlopened " << name << " @ " << h << "\n";
         }
         if (!h) {
@@ -173,7 +173,7 @@ static int runComparative(const Config& cfg) {
             dlclose(h);
             return 1;
         }
-        if (cfg.verbose) {
+        if (cfg.debug) {
             std::cout << "[DEBUG]   validated registration for " << name << "\n";
         }
         algoHandles.push_back(h);
@@ -192,11 +192,11 @@ static int runComparative(const Config& cfg) {
 
     std::vector<void*> gmHandles;
 std::vector<std::string> validGmPaths; // Track only successfully loaded GMs
-if (cfg.verbose) {
+if (cfg.debug) {
     std::cout << "[DEBUG] About to load GameManager plugins from '" << cfg.game_managers_folder << "'\n";
 }
 for (auto const& gmPath : gmPaths) {
-    if (cfg.verbose) {
+    if (cfg.debug) {
         std::cout << "[DEBUG]  Loading GM: " << gmPath << "\n";
     }
     std::string name = stripSo(gmPath);
@@ -207,7 +207,7 @@ for (auto const& gmPath : gmPaths) {
         gmReg.removeLast(); // Clean up the registry entry
         continue; // Skip this GM and continue with the next one
     }
-    if (cfg.verbose) {
+    if (cfg.debug) {
         std::cout << "[DEBUG]   dlopened GM " << name << " @ " << h << "\n";
     }
     try { 
@@ -219,7 +219,7 @@ for (auto const& gmPath : gmPaths) {
         dlclose(h);
         continue; // Skip this GM and continue with the next one
     }
-    if (cfg.verbose) {
+    if (cfg.debug) {
         std::cout << "[DEBUG]   validated GM registration for " << name << "\n";
     }
     gmHandles.push_back(h);
@@ -371,7 +371,7 @@ static int runCompetition(const Config& cfg) {
     std::vector<size_t>                         mapRows, mapCols, mapMaxSteps, mapNumShells;
     for (auto const& mapFile : maps) {
         try {
-            MapData md = loadMapWithParams(mapFile,cfg.verbose);
+            MapData md = loadMapWithParams(mapFile,cfg.debug);
             mapViews.emplace_back(std::move(md.view));
             mapCols .push_back(md.cols);
             mapRows .push_back(md.rows);
@@ -464,7 +464,6 @@ static int runCompetition(const Config& cfg) {
 // -----------------------------
 int main(int argc, char* argv[]) {
     Config cfg;
-    std::cout << "HELLLLLLLOOOOOOOOOO" << std::endl;
     if (!parseArguments(argc, argv, cfg)) {
         return 1;
     }

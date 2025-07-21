@@ -7,6 +7,7 @@ struct Config {
     bool   modeComparative   = false;
     bool   modeCompetition   = false;
     bool   verbose           = false;
+    bool   debug           = false;
     int    numThreads        = 1;
 
     // comparative-only

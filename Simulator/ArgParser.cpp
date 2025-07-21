@@ -33,6 +33,7 @@ bool parseArguments(int argc, char* argv[], Config& cfg) {
         if      (arg == "--comparative")            cfg.modeComparative = true;
         else if (arg == "--competition")             cfg.modeCompetition = true;
         else if (arg == "--verbose")                 cfg.verbose = true;
+        else if (arg == "--debug")                 cfg.debug = true;
         else if (arg.rfind("num_threads=", 0) == 0)  cfg.numThreads = std::stoi(stripKey(arg, "num_threads="));
         else if (arg.rfind("game_map=", 0) == 0)      cfg.game_map = stripKey(arg, "game_map=");
         else if (arg.rfind("game_managers_folder=",0)==0) cfg.game_managers_folder = stripKey(arg, "game_managers_folder=");

@@ -43,22 +43,22 @@ void Board::loadFromSatelliteView(const SatelliteView& sv) {
     }
 
     // DEBUG: dump entire board
-    if (verbose_) {
+    // if (verbose_) {
 
-    std::cout << "[DEBUG] Board after loadFromSatelliteView (" 
-              << rows_ << "×" << cols_ << "):\n";
-    for (std::size_t y = 0; y < rows_; ++y) {
-        for (std::size_t x = 0; x < cols_; ++x) {
-            const auto& cell = getCell(x, y);
-            char d = '_';
-            if (cell.content == CellContent::WALL)   d = '#';
-            else if (cell.content == CellContent::MINE)   d = '@';
-            else if (cell.content == CellContent::TANK1)  d = '1';
-            else if (cell.content == CellContent::TANK2)  d = '2';
-            std::cout << d;
-        }
-        std::cout << "\n";
-    }
-    }
+    // std::cout << "[DEBUG] Board after loadFromSatelliteView (" 
+    //           << rows_ << "×" << cols_ << "):\n";
+    // for (std::size_t y = 0; y < rows_; ++y) {
+    //     for (std::size_t x = 0; x < cols_; ++x) {
+    //         const auto& cell = getCell(x, y);
+    //         char d = '_';
+    //         if (cell.content == CellContent::WALL)   d = '#';
+    //         else if (cell.content == CellContent::MINE)   d = '@';
+    //         else if (cell.content == CellContent::TANK1)  d = '1';
+    //         else if (cell.content == CellContent::TANK2)  d = '2';
+    //         std::cout << d;
+    //     }
+    //     std::cout << "\n";
+    // }
+    // }
 }
 

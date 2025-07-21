@@ -60,22 +60,22 @@ GameResult GameManager::run(
     );
 
     // 3) Print initial board
-    std::cout << "=== Start Position ===\n";
-    state.printBoard();
+    // std::cout << "=== Start Position ===\n";
+    // state.printBoard();
 
     // 4) Game loop
     std::size_t turn = 1;
     while (!state.isGameOver()) {
-        std::cout << "=== Turn " << turn << " ===\n";
+        // std::cout << "=== Turn " << turn << " ===\n";
         std::string actions = state.advanceOneTurn();
-        state.printBoard();
+        // state.printBoard();
         ofs << actions << "\n";
         ++turn;
     }
 
     // 5) Final board + result
-    std::cout << "=== Final Board ===\n";
-    state.printBoard();
+    // std::cout << "=== Final Board ===\n";
+    // state.printBoard();
     std::string resultStr = state.getResultString();
     std::cout << resultStr << "\n";
     ofs << resultStr << "\n";
