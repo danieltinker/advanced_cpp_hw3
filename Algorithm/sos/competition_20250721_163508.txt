@@ -1,0 +1,5 @@
+game_maps_folder=../maps
+game_manager=../GameManager/sos/GameManager_315634022.so
+
+libAlgorithm_315634022 4
+libAlgorithmAlt_315634022 1

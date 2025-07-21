@@ -10,6 +10,10 @@
 #include <memory>
 #include <dlfcn.h>
 #include <stdexcept>
+#include <chrono>
+#include <iomanip>
+#include <map>
+#include <algorithm>
 
 #include "ArgParser.hpp"
 #include "AlgorithmRegistrar.h"
@@ -19,7 +23,36 @@
 #include "GameResult.h"
 
 namespace fs = std::filesystem;
+// ——————————————————————————————————————————————————————
+// Error‐logging and timestamp helpers
+// ——————————————————————————————————————————————————————
 
+static std::ofstream errLog;
+
+// Call this once at program start to open errors.txt for appending
+static void initErrorLog() {
+    errLog.open("errors.txt", std::ios::app);
+}
+
+// Mirror every error to both stderr and errors.txt
+static void logError(const std::string& msg) {
+    std::cerr << msg;
+    if (errLog.is_open()) {
+        errLog << msg;
+        errLog.flush();
+    }
+}
+
+// Returns "YYYYMMDD_HHMMSS" for file names
+static std::string currentTimestamp() {
+    auto now = std::chrono::system_clock::now();
+    auto t   = std::chrono::system_clock::to_time_t(now);
+    std::tm tm{};
+    localtime_r(&t, &tm);
+    std::ostringstream ss;
+    ss << std::put_time(&tm, "%Y%m%d_%H%M%S");
+    return ss.str();
+}
 //------------------------------------------------------------------------------
 // MapLoader: parse your assignment‐style map file
 //------------------------------------------------------------------------------
@@ -131,6 +164,124 @@ static std::string stripSo(const std::string& path) {
         return fname.substr(0, pos);
     return fname;
 }
+// ——————————————————————————————————————————————————————
+// Entry type for comparative‑mode results
+// ——————————————————————————————————————————————————————
+struct ComparativeEntry {
+    std::string gmName;      // plugin name
+    GameResult  res;         // result: winner(0/1/2), reason, rounds
+    std::string finalState;  // ASCII board snapshot (with '\n's)
+
+    ComparativeEntry(std::string g,
+                     GameResult  r,
+                     std::string fs)
+      : gmName(std::move(g))
+      , res(std::move(r))
+      , finalState(std::move(fs))
+    {}
+};
+// Format the “who won / tie and why” message
+// ————————————————————————————————————————————————————
+static std::string outcomeMessage(int winner, GameResult::Reason reason) {
+    std::string msg;
+    if (winner == 0)           msg = "Tie: ";
+    else if (winner == 1)      msg = "Player 1 won: ";
+    else /* winner == 2 */     msg = "Player 2 won: ";
+
+    switch (reason) {
+      case GameResult::ALL_TANKS_DEAD:
+        msg += "all opponent tanks dead";   break;
+      case GameResult::MAX_STEPS:
+        msg += "max steps reached";         break;
+      case GameResult::ZERO_SHELLS:
+        msg += "no shells remaining";       break;
+    }
+    return msg;
+}
+
+static bool writeComparativeFile(
+    const Config& cfg,
+    const std::string& algo1,
+    const std::string& algo2,
+    const std::vector<ComparativeEntry>& entries)
+{
+
+        // 1) Header key
+    struct Outcome {
+        int                       winner;
+        GameResult::Reason        reason;
+        size_t                    rounds;
+        std::string               finalState;
+        bool operator<(Outcome const& o) const {
+            if (winner != o.winner)     return winner  < o.winner;
+            if (reason != o.reason)     return reason  < o.reason;
+            if (rounds != o.rounds)     return rounds  < o.rounds;
+            return finalState < o.finalState;
+        }
+    };
+
+    // 2) Group GMs by identical Outcome
+    std::map<Outcome, std::vector<std::string>> groups;
+
+    for (auto const& e : entries) {
+        Outcome key{
+            e.res.winner,
+            e.res.reason,
+            e.res.rounds,
+            e.finalState
+        };
+        groups[key].push_back(e.gmName);
+    }
+    // 3) Build output path
+    auto ts = currentTimestamp();
+    fs::path outPath = fs::path(cfg.game_managers_folder)
+                     / ("comparative_results_" + ts + ".txt");
+
+    // 4) Open file (or fallback)
+    std::ofstream ofs(outPath);
+    if (!ofs.is_open()) {
+        logError("Error: cannot create " + outPath.string() + "\n");
+        // Fallback to stdout
+        goto PRINT_STDOUT;
+    }
+
+    // 5) Write header
+    ofs << "game_map="   << cfg.game_map   << "\n";
+    ofs << "algorithm1=" << algo1          << "\n";
+    ofs << "algorithm2=" << algo2          << "\n\n";
+
+    // 6) Iterate each group
+    for (auto const& [outcome, gms] : groups) {
+        // 5th line: comma‑separated GM names
+        for (size_t i = 0; i < gms.size(); ++i) {
+            ofs << gms[i] << (i + 1 < gms.size() ? "," : "") ;
+        }
+        ofs << "\n";
+        // 6th: result message
+        ofs << outcomeMessage(outcome.winner, outcome.reason) << "\n";
+        // 7th: round number
+        ofs << outcome.rounds << "\n";
+        // 8th+: final ASCII map
+        ofs << outcome.finalState << "\n\n";
+    }
+    return true;
+
+PRINT_STDOUT:
+    std::cout << "game_map="   << cfg.game_map   << "\n";
+    std::cout << "algorithm1=" << algo1          << "\n";
+    std::cout << "algorithm2=" << algo2          << "\n\n";
+    for (auto const& [outcome, gms] : groups) {
+        for (size_t i = 0; i < gms.size(); ++i) {
+            std::cout << gms[i] << (i + 1 < gms.size() ? "," : "") ;
+        }
+        std::cout << "\n";
+        std::cout << outcomeMessage(outcome.winner, outcome.reason) << "\n";
+        std::cout << outcome.rounds << "\n";
+        std::cout << outcome.finalState << "\n\n";
+    }
+    return false;
+}
+
 
 // -----------------------------
 // Comparative mode
@@ -236,7 +387,9 @@ for (auto const& gmPath : gmPaths) {
         Entry(std::string g, std::string x, std::string y, GameResult r)
           : gm(std::move(g)), a1(std::move(x)), a2(std::move(y)), res(std::move(r)) {}
     };
-    std::vector<Entry> results;
+    // std::vector<Entry> results;
+    std::vector<ComparativeEntry> results;
+
 
     if (validGmPaths.empty()) {
     std::cerr << "Error: no valid GameManager plugins could be loaded\n";
@@ -267,31 +420,130 @@ for (size_t gi = 0; gi < validGmPaths.size(); ++gi) {
             [&](int pi,int ti){ return B.createTankAlgorithm(pi,ti); }
         );
 
+        std::ostringstream ss;
+        auto* state = gr.gameState.get();
+        for (size_t y = 0; y < md.rows; ++y) {
+            for (size_t x = 0; x < md.cols; ++x) {
+                ss << state->getObjectAt(x, y);
+            }
+            ss << '\n';
+        }
+        std::string finalMap = ss.str();
         std::lock_guard<std::mutex> lock(mtx);
         results.emplace_back(
-            stripSo(validGmPaths[gi]), // Use validGmPaths instead of gmPaths
-            stripSo(cfg.algorithm1),
-            stripSo(cfg.algorithm2),
-            std::move(gr)
+            stripSo(validGmPaths[gi]),  // gmName
+             std::move(gr),              // GameResult
+            std::move(finalMap)         // the ASCII snapshot
         );
     });
 }
     pool.shutdown();
 
+
+    writeComparativeFile(
+    cfg,
+    stripSo(cfg.algorithm1),
+    stripSo(cfg.algorithm2),
+    results
+);
     // 5) Report & cleanup
     std::cout << "[Simulator] Comparative Results:\n";
     for (auto& e : results) {
-        std::cout << "  GM=" << e.gm
-                  << "  A1=" << e.a1
-                  << "  A2=" << e.a2
-                  << " => winner="  << e.res.winner
-                  << "  reason="  << static_cast<int>(e.res.reason)
-                  << "  rounds=" << e.res.rounds << "\n";
+        std::cout << "  GM="    << e.gmName
+          << "  winner="  << e.res.winner
+          << "  reason="  << static_cast<int>(e.res.reason)
+          << "  rounds=" << e.res.rounds
+          << "\n";
     }
+    
     // for (auto h : gmHandles)   dlclose(h);
     // for (auto h : algoHandles) dlclose(h);
     return 0;
 }
+
+
+
+
+
+// ——————————————————————————————————————————————————————
+// Entry type for competitive‐mode results
+// ——————————————————————————————————————————————————————
+struct CompetitionEntry {
+    std::string mapFile;   // which map
+    std::string a1, a2;    // algorithm names
+    GameResult  res;       // its outcome
+    CompetitionEntry(std::string m,
+                     std::string x,
+                     std::string y,
+                     GameResult  r)
+      : mapFile(std::move(m))
+      , a1(std::move(x))
+      , a2(std::move(y))
+      , res(std::move(r))
+    {}
+};
+
+// Writes out the competition_<timestamp>.txt file.
+// Returns true on success; on failure it falls back to printing to stdout.
+static bool writeCompetitionFile(
+    const Config& cfg,
+    const std::vector<CompetitionEntry>& results)
+{
+    // 1) Tally scores
+    std::map<std::string,int> scores;
+    for (auto const& entry : results) {
+        const auto& a1 = entry.a1;
+        const auto& a2 = entry.a2;
+        int w = entry.res.winner;  // 0=tie, 1=a1, 2=a2
+
+        if (w == 1) {
+            scores[a1] += 3;
+        }
+        else if (w == 2) {
+            scores[a2] += 3;
+        }
+        else {
+            // tie
+            scores[a1] += 1;
+            scores[a2] += 1;
+        }
+    }
+
+    // 2) Sort by descending score
+    std::vector<std::pair<std::string,int>> sorted(scores.begin(), scores.end());
+    std::sort(sorted.begin(), sorted.end(),
+        [](auto const& L, auto const& R){
+            return L.second > R.second;
+        });
+
+    // 3) Build output path
+    auto ts = currentTimestamp();
+    fs::path outPath = fs::path(cfg.algorithms_folder)
+                     / ("competition_" + ts + ".txt");
+
+    // 4) Open file (or fallback to stdout)
+    std::ofstream ofs(outPath);
+    if (!ofs.is_open()) {
+        logError("Error: cannot create " + outPath.string() + "\n");
+        // fallback print
+        std::cout << "game_maps_folder=" << cfg.game_maps_folder << "\n";
+        std::cout << "game_manager="     << cfg.game_manager      << "\n\n";
+        for (auto const& p : sorted) {
+            std::cout << p.first << " " << p.second << "\n";
+        }
+        return false;
+    }
+
+    // 5) Write contents
+    ofs << "game_maps_folder=" << cfg.game_maps_folder << "\n";
+    ofs << "game_manager="     << cfg.game_manager      << "\n\n";
+    for (auto const& p : sorted) {
+        ofs << p.first << " " << p.second << "\n";
+    }
+
+    return true;
+}
+
 
 // -----------------------------
 // Competition mode
@@ -396,7 +648,8 @@ static int runCompetition(const Config& cfg) {
         Entry(std::string m, std::string x, std::string y, GameResult r)
           : mapFile(std::move(m)), a1(std::move(x)), a2(std::move(y)), res(std::move(r)) {}
     };
-    std::vector<Entry> results;
+    // std::vector<Entry> results;
+    std::vector<CompetitionEntry> results;
     auto& gmEntry = *gmReg.begin();
 
     for (size_t mi = 0; mi < mapViews.size(); ++mi) {
@@ -441,7 +694,9 @@ static int runCompetition(const Config& cfg) {
             }
         }
     }
+
     pool.shutdown();
+    writeCompetitionFile(cfg, results);
 
     // 6) Report & cleanup
     std::cout << "[Simulator] Competition Results:\n";
@@ -467,6 +722,8 @@ int main(int argc, char* argv[]) {
     if (!parseArguments(argc, argv, cfg)) {
         return 1;
     }
+    // ─── Initialize our error log ────────────────────────────────
+    initErrorLog();
     return cfg.modeComparative
         ? runComparative(cfg)
         : runCompetition(cfg);
