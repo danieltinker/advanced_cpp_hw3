@@ -156,10 +156,6 @@ std::string GameState::advanceOneTurn() {
             } else {
                 p2_.updateTankWithBattleInfo(alg, view);
             }
-
-
-
-
             actions[k] = ActionRequest::GetBattleInfo;
         }
         else {

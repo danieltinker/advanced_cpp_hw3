@@ -1,3 +1,18 @@
+  ./simulator_315634022 --competition \
+  game_maps_folder=../maps \
+  game_manager=../GameManager/sos/GameManager_315634022.so \
+  algorithms_folder=../Algorithm/sos \
+  num_threads=1 \
+  --verbose
+
+
+./simulator_315634022 --comparative \
+  game_map=../maps/example.txt \
+  game_managers_folder=../GameManager/sos/ \
+  algorithm1=../Algorithm/sos/libAlgorithm_315634022.so \
+  algorithm2=../Algorithm/sos/libAlgorithmAlt_315634022.so \
+  num_threads=4
+
 # How To Run [from root directory]:
 1. make clean && make
 

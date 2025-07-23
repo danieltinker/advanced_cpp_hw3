@@ -25,7 +25,7 @@ ifeq ($(DEBUG),0)
 endif
 
 # Linking flags
-LDLIBS_TEST     := -L$(OUTPUT_DIR) -lsimreg -ldl
+LDLIBS_TEST     := -L$(OUTPUT_DIR) -lsimreg -ldl -lpthread
 
 # Source files organized by component
 REG_SRCS        := AlgorithmRegistrar.cpp \

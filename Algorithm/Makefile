@@ -20,7 +20,7 @@ ifeq ($(UNAME_S),Darwin)
     LDFLAGS := -shared -undefined dynamic_lookup
 else
     # Linux: Standard shared library
-    LDFLAGS := -shared -fPIC
+    LDFLAGS := -shared -fPIC -lpthread
 endif
 
 # Build configuration
