@@ -4,6 +4,10 @@
 #include <vector>
 #include <cstddef>
 #include <SatelliteView.h>
+
+namespace GameManager_315634022{
+
+
 /// Contents of a single board cell.
 enum class CellContent {
     EMPTY,
@@ -56,3 +60,4 @@ private:
     std::size_t rows_ = 0, cols_ = 0;
     std::vector<std::vector<Cell>> grid_;
 };
+}

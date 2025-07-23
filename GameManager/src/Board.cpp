@@ -1,6 +1,7 @@
 // src/Board.cpp
 #include "Board.h"
 #include <iostream>
+using namespace GameManager_315634022;
 Board::Board(std::size_t rows, std::size_t cols, bool verbose)
   : rows_(rows), cols_(cols), verbose_(verbose),
     grid_(rows, std::vector<Cell>(cols))

@@ -13,7 +13,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace GameManager_315634022 {
+using namespace GameManager_315634022;
 
 // your plugin’s logical name
 static constexpr char const* kGMName = "GameManager_315634022";
@@ -159,7 +159,7 @@ GameResult GameManager::run(
     return gm;
 }
 
-} // namespace GameManager_315634022
+// namespace GameManager_315634022
 
 using ::GameManager_315634022::GameManager;
 // Register for dynamic loading
