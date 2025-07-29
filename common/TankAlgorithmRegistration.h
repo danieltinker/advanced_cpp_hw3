@@ -17,5 +17,5 @@ struct TankAlgorithmRegistration {
             return std::make_unique<class_name>(                 \
                 player_index, tank_index                         \
             );                                                    \
-        }                                                         \
-    )
+        })
+        

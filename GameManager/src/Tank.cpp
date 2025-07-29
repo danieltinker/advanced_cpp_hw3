@@ -1,6 +1,6 @@
 #include "Tank.h"
 
-namespace GameManager_315634022 {
+using namespace GameManager_315634022;
 
 // Constructor
 Tank::Tank(int playerIndex,
@@ -110,4 +110,3 @@ void Tank::destroy() {
     alive_ = false;
 }
 
-} // namespace arena

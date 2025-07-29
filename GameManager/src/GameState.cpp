@@ -5,7 +5,6 @@
 #include <sstream>
 
 using namespace GameManager_315634022;
-
 GameState::GameState(
     Board&&                board,
     std::string            map_name,
@@ -19,7 +18,8 @@ GameState::GameState(
     TankAlgorithmFactory   factory2,
     bool                   verbose
 )
-  : board_(std::move(board))
+  : verbose_(verbose)
+  , board_(std::move(board))
   , map_name_(std::move(map_name))
   , max_steps_(max_steps)
   , currentStep_(0)
@@ -32,7 +32,7 @@ GameState::GameState(
   , name2_(name2)
   , algoFactory1_(std::move(factory1))
   , algoFactory2_(std::move(factory2))
-  , verbose_(verbose)
+  
 {
     // --- Initialize tanks from board ---
     rows_ = board_.getRows();
@@ -67,52 +67,117 @@ GameState::GameState(
 
     // --- Create per‐tank algorithms ---
     all_tank_algorithms_.clear();
-    for (auto& ts : all_tanks_) {
-        if (ts.player_index == 1)
-            all_tank_algorithms_.push_back(algoFactory1_(ts.player_index, ts.tank_index));
-        else
-            all_tank_algorithms_.push_back(algoFactory2_(ts.player_index, ts.tank_index));
+    std::cout << "=== ALGORITHM CREATION DEBUG ===" << std::endl;
+    std::cout << "Creating algorithms for " << all_tanks_.size() << " tanks" << std::endl;
+    std::cout << "Factory1 pointer: " << &algoFactory1_ << std::endl;
+    std::cout << "Factory2 pointer: " << &algoFactory2_ << std::endl;
+
+    for (size_t i = 0; i < all_tanks_.size(); ++i) {
+        auto& ts = all_tanks_[i];
+        std::cout << "\n--- Tank " << i << " ---" << std::endl;
+        std::cout << "Player: " << ts.player_index << ", Tank index: " << ts.tank_index << std::endl;
+        std::cout << "Tank position: (" << ts.x << ", " << ts.y << ")" << std::endl;
+        std::cout << "Tank alive: " << (ts.alive ? "yes" : "no") << std::endl;
+        
+        std::unique_ptr<TankAlgorithm> algo;
+        try {
+            if (ts.player_index == 1) {
+                std::cout << "Calling factory1 for player 1..." << std::endl;
+                algo = algoFactory1_(ts.player_index, ts.tank_index);
+                std::cout << "Factory1 returned: " << algo.get() << std::endl;
+            } else {
+                std::cout << "Calling factory2 for player 2..." << std::endl;
+                algo = algoFactory2_(ts.player_index, ts.tank_index);
+                std::cout << "Factory2 returned: " << algo.get() << std::endl;
+            }
+            
+            if (algo) {
+                std::cout << "Algorithm created successfully!" << std::endl;
+                std::cout << "Algorithm pointer: " << algo.get() << std::endl;
+                std::cout << "Algorithm type info: " << typeid(*algo).name() << std::endl;
+                
+                // INITIALIZE WITH EMPTY BATTLE INFO FIRST - BEFORE ANY TESTING
+                std::cout << "Initializing algorithm " << i << " with empty battle info..." << std::endl;
+                
+                // Create an empty/unknown grid - all question marks to indicate unknown terrain
+                std::vector<std::vector<char>> empty_grid(rows_, std::vector<char>(cols_, '?'));
+                
+                // Create the satellite view with the tank's actual position but unknown surroundings
+                MySatelliteView empty_view(empty_grid, rows_, cols_, ts.x, ts.y);
+                
+                try {
+                    if (ts.player_index == 1) {
+                        p1_.updateTankWithBattleInfo(*algo, empty_view);
+                    } else {
+                        p2_.updateTankWithBattleInfo(*algo, empty_view);
+                    }
+                    std::cout << "Empty battle info provided successfully to algorithm " << i << std::endl;
+                } catch (const std::exception& e) {
+                    std::cout << "ERROR initializing algorithm " << i << " with empty battle info: " << e.what() << std::endl;
+                    // Continue anyway - maybe the algorithm can work without it
+                } catch (...) {
+                    std::cout << "ERROR: Unknown exception initializing algorithm " << i << " with empty battle info" << std::endl;
+                    // Continue anyway
+                }
+                
+                // NOW test if we can call a basic method (after initialization)
+                try {
+                    std::cout << "Testing algorithm with getAction() (after initialization)..." << std::endl;
+                    ActionRequest test_action = algo->getAction();
+                    std::cout << "Algorithm getAction() succeeded, returned: " << static_cast<int>(test_action) << std::endl;
+                } catch (const std::exception& e) {
+                    std::cout << "ERROR: Algorithm getAction() threw exception: " << e.what() << std::endl;
+                } catch (...) {
+                    std::cout << "ERROR: Algorithm getAction() threw unknown exception" << std::endl;
+                }
+                
+                all_tank_algorithms_.push_back(std::move(algo));
+            } else {
+                std::cout << "ERROR: Factory returned null algorithm!" << std::endl;
+                throw std::runtime_error("Factory returned null algorithm");
+            }
+        } catch (const std::exception& e) {
+            std::cout << "ERROR: Exception during algorithm creation: " << e.what() << std::endl;
+            throw;
+        } catch (...) {
+            std::cout << "ERROR: Unknown exception during algorithm creation" << std::endl;
+            throw;
+        }
     }
 
-    if (verbose_) {
+    std::cout << "\n=== ALGORITHM CREATION COMPLETE ===" << std::endl;
+    std::cout << "Total algorithms created: " << all_tank_algorithms_.size() << std::endl;
 
-    // size_t count1 = 0, count2 = 0;
-    // for (auto& ts : all_tanks_) {
-    //     if (ts.player_index == 1) ++count1;
-    //     else if (ts.player_index == 2) ++count2;
-    // }
-    // std::cout << "[DEBUG] Spawned tanks — player1=" << count1 
-    //         << ", player2=" << count2 << "\n";
-    // for (auto& ts : all_tanks_) {
-    //     std::cout << "[DEBUG]  Tank(" << ts.player_index << "," << ts.tank_index<< ") at (" << ts.x << "," << ts.y << ")\n";
-    // }
+    // Verify all algorithms are still valid
+    for (size_t i = 0; i < all_tank_algorithms_.size(); ++i) {
+        std::cout << "Algorithm " << i << " pointer: " << all_tank_algorithms_[i].get() << std::endl;
     }
+    std::cout << "=== END ALGORITHM CREATION DEBUG ===" << std::endl;
 
     // Shells & end‐state
     shells_.clear();
     toRemove_.clear();
     positionMap_.clear();
 }
-
 GameState::~GameState() = default;
 
 bool GameState::isGameOver() const { return gameOver_; }
 std::string GameState::getResultString() const { return resultStr_; }
 
 
-static const char* actionToString(ActionRequest a) {
-    switch (a) {
-      case ActionRequest::MoveForward:    return "MoveForward";
-      case ActionRequest::MoveBackward:   return "MoveBackward";
-      case ActionRequest::RotateLeft90:   return "RotateLeft90";
-      case ActionRequest::RotateRight90:  return "RotateRight90";
-      case ActionRequest::RotateLeft45:   return "RotateLeft45";
-      case ActionRequest::RotateRight45:  return "RotateRight45";
-      case ActionRequest::Shoot:          return "Shoot";
-      case ActionRequest::GetBattleInfo:  return "GetBattleInfo";
-      default:                                    return "DoNothing";
-    }
-}
+// static const char* actionToString(ActionRequest a) {
+//     switch (a) {
+//       case ActionRequest::MoveForward:    return "MoveForward";
+//       case ActionRequest::MoveBackward:   return "MoveBackward";
+//       case ActionRequest::RotateLeft90:   return "RotateLeft90";
+//       case ActionRequest::RotateRight90:  return "RotateRight90";
+//       case ActionRequest::RotateLeft45:   return "RotateLeft45";
+//       case ActionRequest::RotateRight45:  return "RotateRight45";
+//       case ActionRequest::Shoot:          return "Shoot";
+//       case ActionRequest::GetBattleInfo:  return "GetBattleInfo";
+//       default:                                    return "DoNothing";
+//     }
+// }
 
 
 //------------------------------------------------------------------------------
@@ -135,29 +200,68 @@ std::string GameState::advanceOneTurn() {
         if (!ts.alive) continue;
 
         ActionRequest req = alg.getAction();
-        if (req == ActionRequest::GetBattleInfo) {
-            // build a visibility snapshot
-            std::vector<std::vector<char>> grid(rows_, std::vector<char>(cols_, ' '));
-            for (size_t yy = 0; yy < rows_; ++yy) {
-                for (size_t xx = 0; xx < cols_; ++xx) {
-                    const auto& cell = board_.getCell(int(xx), int(yy));
-                    grid[yy][xx] = (cell.content==CellContent::WALL ? '#' :
-                                    cell.content==CellContent::MINE ? '@' :
-                                    cell.content==CellContent::TANK1 ? '1' :
-                                    cell.content==CellContent::TANK2 ? '2' : ' ');
-                }
-            }
-            // mark the querying tank’s position specially
-            grid[ts.y][ts.x] = '%';
-
-            MySatelliteView view(grid, rows_, cols_, ts.x, ts.y);
-            if (ts.player_index == 1) {
-                p1_.updateTankWithBattleInfo(alg, view);
-            } else {
-                p2_.updateTankWithBattleInfo(alg, view);
-            }
-            actions[k] = ActionRequest::GetBattleInfo;
+if (req == ActionRequest::GetBattleInfo) {
+    std::cout <<"GameState Tank requested GetBattleInfo" << std::endl;
+    // build a visibility snapshot
+    std::vector<std::vector<char>> grid(rows_, std::vector<char>(cols_, ' '));
+    for (size_t yy = 0; yy < rows_; ++yy) {
+        for (size_t xx = 0; xx < cols_; ++xx) {
+            const auto& cell = board_.getCell(int(xx), int(yy));
+            grid[yy][xx] = (cell.content==CellContent::WALL ? '#' :
+                cell.content==CellContent::MINE ? '@' :
+                cell.content==CellContent::TANK1 ? '1' :
+                cell.content==CellContent::TANK2 ? '2' : ' ');
         }
+    }
+    // mark the querying tank's position specially
+    if (ts.y >= 0 && ts.y < static_cast<int>(rows_) && 
+        ts.x >= 0 && ts.x < static_cast<int>(cols_)) {
+        grid[ts.y][ts.x] = '%';
+    }
+    
+    std::cout <<"GameState Constructing SatelliteView " << std::endl;
+    std::cout <<"Grid size: " << rows_ << "x" << cols_ << std::endl;
+    std::cout <<"Tank position: (" << ts.x << ", " << ts.y << ")" << std::endl;
+    
+    // Print the grid we're about to pass
+    std::cout << "Grid contents:" << std::endl;
+    for (size_t r = 0; r < rows_; ++r) {
+        for (size_t c = 0; c < cols_; ++c) {
+            std::cout << grid[r][c];
+        }
+        std::cout << std::endl;
+    }
+    
+    MySatelliteView view(grid, rows_, cols_, ts.x, ts.y);
+    
+    // Test our view before passing it
+    std::cout << "Testing MySatelliteView:" << std::endl;
+    std::cout << "Rows: " << view.getRows() << ", Cols: " << view.getCols() << std::endl;
+    std::cout << "Tank: (" << view.getTankX() << ", " << view.getTankY() << ")" << std::endl;
+    
+    char** test_grid = view.getGrid();
+    if (test_grid != nullptr) {
+        std::cout << "Grid pointer is valid" << std::endl;
+        // Test first row
+        if (test_grid[0] != nullptr) {
+            std::cout << "First row pointer is valid, first char: '" << test_grid[0][0] << "'" << std::endl;
+        } else {
+            std::cout << "ERROR: First row pointer is null!" << std::endl;
+        }
+    } else {
+        std::cout << "ERROR: Grid pointer is null!" << std::endl;
+    }
+    
+    std::cout << "About to call updateTankWithBattleInfo..." << std::endl;
+    
+    if (ts.player_index == 1) {
+        p1_.updateTankWithBattleInfo(alg, view);
+    } else {
+        p2_.updateTankWithBattleInfo(alg, view);
+    }
+    std::cout <<"GameState Tank Was Updated with Battle Info" << std::endl;
+    actions[k] = ActionRequest::GetBattleInfo;
+}
         else {
             actions[k] = req;
         }
@@ -269,6 +373,7 @@ for (size_t k = 0; k < N; ++k) {
     // std::cout << "=== Board State: ===\n" << std::endl;
     
     // ─── Logging: use the ORIGINAL requests ────────────────────────────────────
+    std::cout <<"now Will Try LoggINg!@!?@?@!?@"<<std::endl;
     std::ostringstream oss;
     for (size_t k = 0; k < N; ++k) {
         const auto act = logActions[k];
@@ -590,7 +695,7 @@ void GameState::updateTankPositionsOnBoard(std::vector<bool>& ignored,
             continue;
         }
 
-        // --- NEW: mutual shell‐tank destruction ---
+        // --- mutual shell‐tank destruction ---
         {
             bool collidedWithShell = false;
             for (size_t s = 0; s < shells_.size(); ++s) {

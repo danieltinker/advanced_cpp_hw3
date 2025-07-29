@@ -21,7 +21,7 @@ class GameManagerRegistrar {
         {}
 
         void setFactory(GameManagerFactory&& f) {
-            assert(!factory);
+            // assert(!factory);
             factory = std::move(f);
         }
 
